@@ -137,6 +137,7 @@ const Gantt = {
         }
 
         this.bindEvents();
+        this.initDragResize();
     },
 
     // ヘッダー描画
@@ -274,11 +275,15 @@ const Gantt = {
         const progressWidth = (task.progress || 0) * width / 100;
 
         return `
-            <div class="gantt-task-bar priority-${task.priority} status-${task.status}" 
+            <div class="gantt-task-bar priority-${task.priority} status-${task.status} gantt-draggable" 
                  style="left: ${left}px; width: ${width}px"
-                 data-task-id="${task.id}">
+                 data-task-id="${task.id}"
+                 data-start-date="${task.startDate}"
+                 data-end-date="${task.endDate}">
+                <div class="gantt-resize-handle gantt-resize-left"></div>
                 <div class="gantt-task-bar-fill" style="width: ${progressWidth}px"></div>
                 <span class="gantt-task-bar-label">${UI.escapeHtml(task.name)}</span>
+                <div class="gantt-resize-handle gantt-resize-right"></div>
             </div>
         `;
     },
@@ -384,6 +389,139 @@ const Gantt = {
             this.collapsedProjects.add(projectId);
         }
         this.render();
+    },
+
+    // ドラッグ&リサイズ状態
+    dragState: {
+        isDragging: false,
+        isResizing: false,
+        resizeDirection: null,
+        element: null,
+        taskId: null,
+        startX: 0,
+        originalLeft: 0,
+        originalWidth: 0,
+        startDate: null,
+        endDate: null
+    },
+
+    // ドラッグ&リサイズ初期化
+    initDragResize() {
+        const container = document.getElementById('ganttContainer');
+        if (!container) return;
+
+        // マウスダウン
+        container.addEventListener('mousedown', (e) => {
+            const bar = e.target.closest('.gantt-draggable');
+            if (!bar) return;
+
+            const isResizeHandle = e.target.classList.contains('gantt-resize-handle');
+            const isLeftHandle = e.target.classList.contains('gantt-resize-left');
+
+            this.dragState = {
+                isDragging: !isResizeHandle,
+                isResizing: isResizeHandle,
+                resizeDirection: isResizeHandle ? (isLeftHandle ? 'left' : 'right') : null,
+                element: bar,
+                taskId: bar.dataset.taskId,
+                startX: e.clientX,
+                originalLeft: parseInt(bar.style.left) || 0,
+                originalWidth: parseInt(bar.style.width) || 100,
+                startDate: bar.dataset.startDate,
+                endDate: bar.dataset.endDate
+            };
+
+            bar.classList.add('dragging');
+            e.preventDefault();
+        });
+
+        // マウス移動
+        document.addEventListener('mousemove', (e) => {
+            if (!this.dragState.isDragging && !this.dragState.isResizing) return;
+
+            const deltaX = e.clientX - this.dragState.startX;
+            const days = Math.round(deltaX / this.config.cellWidth);
+            const bar = this.dragState.element;
+
+            if (this.dragState.isDragging) {
+                // バー全体を移動
+                const newLeft = this.dragState.originalLeft + deltaX;
+                bar.style.left = `${newLeft}px`;
+            } else if (this.dragState.isResizing) {
+                if (this.dragState.resizeDirection === 'right') {
+                    // 右端リサイズ
+                    const newWidth = Math.max(this.config.cellWidth, this.dragState.originalWidth + deltaX);
+                    bar.style.width = `${newWidth}px`;
+                } else {
+                    // 左端リサイズ
+                    const newLeft = this.dragState.originalLeft + deltaX;
+                    const newWidth = Math.max(this.config.cellWidth, this.dragState.originalWidth - deltaX);
+                    bar.style.left = `${newLeft}px`;
+                    bar.style.width = `${newWidth}px`;
+                }
+            }
+        });
+
+        // マウスアップ
+        document.addEventListener('mouseup', (e) => {
+            if (!this.dragState.isDragging && !this.dragState.isResizing) return;
+
+            const deltaX = e.clientX - this.dragState.startX;
+            const days = Math.round(deltaX / this.config.cellWidth);
+            const bar = this.dragState.element;
+
+            bar.classList.remove('dragging');
+
+            if (days !== 0) {
+                const task = Storage.getTask(this.dragState.taskId);
+                if (task) {
+                    if (this.dragState.isDragging) {
+                        // 全体移動
+                        const start = new Date(task.startDate);
+                        const end = new Date(task.endDate);
+                        start.setDate(start.getDate() + days);
+                        end.setDate(end.getDate() + days);
+                        task.startDate = this.formatDate(start);
+                        task.endDate = this.formatDate(end);
+                    } else if (this.dragState.resizeDirection === 'right') {
+                        // 終了日変更
+                        const end = new Date(task.endDate);
+                        end.setDate(end.getDate() + days);
+                        task.endDate = this.formatDate(end);
+                    } else {
+                        // 開始日変更
+                        const start = new Date(task.startDate);
+                        start.setDate(start.getDate() + days);
+                        task.startDate = this.formatDate(start);
+                    }
+
+                    Storage.saveTask(task);
+                    UI.showToast('タスクの期間を変更しました', 'success');
+                    this.render();
+                    UI.renderProjectList();
+                }
+            }
+
+            this.dragState = {
+                isDragging: false,
+                isResizing: false,
+                resizeDirection: null,
+                element: null,
+                taskId: null,
+                startX: 0,
+                originalLeft: 0,
+                originalWidth: 0,
+                startDate: null,
+                endDate: null
+            };
+        });
+    },
+
+    formatDate(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
     }
 };
 

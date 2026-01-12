@@ -61,6 +61,9 @@ const WeeklyView = {
         if (!container) return;
 
         const weekStart = this.getWeekStart(this.currentDate);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+
         const days = [];
         for (let i = 0; i < 7; i++) {
             const d = new Date(weekStart);
@@ -71,20 +74,77 @@ const WeeklyView = {
         // タイトル更新
         const title = document.getElementById('weeklyTitle');
         if (title) {
-            const endDate = new Date(weekStart);
-            endDate.setDate(weekStart.getDate() + 6);
-            title.textContent = `${this.formatDateShort(weekStart)} - ${this.formatDateShort(endDate)}`;
+            title.textContent = `${this.formatDateShort(weekStart)} - ${this.formatDateShort(weekEnd)}`;
         }
 
         // タスク取得
         const tasks = Storage.getTasks();
         const googleEvents = GoogleCalendar.getEvents() || [];
 
-        let html = this.renderWeeklyHeader(days);
+        // 週内に期限のあるToDoを取得
+        const weekTodos = this.getWeekTodos(weekEnd);
+
+        let html = '<div class="weekly-layout">';
+
+        // ToDoパネル
+        html += this.renderTodoPanel(weekTodos, weekEnd);
+
+        // カレンダーグリッド
+        html += '<div class="weekly-calendar">';
+        html += this.renderWeeklyHeader(days);
         html += this.renderWeeklyBody(days, tasks, googleEvents);
+        html += '</div>';
+
+        html += '</div>';
 
         container.innerHTML = html;
         this.bindEventClicks();
+    },
+
+    // 週内期限のToDoを取得
+    getWeekTodos(weekEnd) {
+        if (typeof ToDo === 'undefined') return [];
+
+        const todos = ToDo.getAll();
+        return todos.filter(todo => {
+            if (todo.completed) return false;
+            if (!todo.dueDate) return true; // 期限なしも表示
+            const due = new Date(todo.dueDate);
+            due.setHours(23, 59, 59);
+            return due <= weekEnd;
+        });
+    },
+
+    // ToDoパネルをレンダリング
+    renderTodoPanel(todos, weekEnd) {
+        let html = '<div class="weekly-todo-panel">';
+        html += '<h3 class="weekly-todo-title">📋 今週のタスク</h3>';
+        html += `<p class="weekly-todo-subtitle">${this.formatDateShort(weekEnd)}までの期限</p>`;
+        html += '<div class="weekly-todo-list">';
+
+        if (todos.length === 0) {
+            html += '<div class="weekly-todo-empty">タスクはありません</div>';
+        } else {
+            todos.forEach(todo => {
+                const dueText = todo.dueDate ? ToDo.formatDueDate(todo.dueDate) : '期限なし';
+                html += `
+                    <div class="weekly-todo-item draggable-todo" 
+                         draggable="true"
+                         data-todo-id="${todo.id}"
+                         data-todo-title="${UI.escapeHtml(todo.title)}"
+                         data-todo-date="${todo.dueDate || ''}">
+                        <span class="todo-priority-dot ${todo.priority}"></span>
+                        <div class="todo-info">
+                            <span class="todo-name">${UI.escapeHtml(todo.title)}</span>
+                            <span class="todo-due">${dueText}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        html += '</div></div>';
+        return html;
     },
 
     renderWeeklyHeader(days) {
@@ -410,6 +470,66 @@ const WeeklyView = {
                     }
                 } catch (error) {
                     console.error('Drag drop error:', error);
+                }
+            });
+        });
+
+        // ToDoドラッグハンドラー
+        this.bindTodoDrag();
+    },
+
+    bindTodoDrag() {
+        document.querySelectorAll('.draggable-todo').forEach(el => {
+            el.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', JSON.stringify({
+                    type: 'todo',
+                    todoId: el.dataset.todoId,
+                    title: el.dataset.todoTitle,
+                    date: el.dataset.todoDate
+                }));
+                el.classList.add('dragging');
+            });
+
+            el.addEventListener('dragend', () => {
+                el.classList.remove('dragging');
+            });
+        });
+
+        // 日付カラムへのドロップを追加
+        document.querySelectorAll('.weekly-day-column').forEach(column => {
+            column.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                column.classList.add('drop-target');
+            });
+
+            column.addEventListener('dragleave', () => {
+                column.classList.remove('drop-target');
+            });
+
+            column.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                column.classList.remove('drop-target');
+
+                try {
+                    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+
+                    // ToDoをGoogle Calendarに登録
+                    if (data.type === 'todo' && typeof GoogleCalendar !== 'undefined' && GoogleCalendar.connected) {
+                        const dateStr = column.dataset.date;
+
+                        await GoogleCalendar.createEvent({
+                            title: data.title,
+                            allDay: true,
+                            startDate: dateStr,
+                            endDate: dateStr,
+                            description: 'ToDoから登録'
+                        });
+
+                        UI.showToast('Google Calendarに予定を追加しました', 'success');
+                        this.renderWeekly();
+                    }
+                } catch (error) {
+                    console.error('Todo drop error:', error);
                 }
             });
         });

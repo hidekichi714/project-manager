@@ -333,3 +333,113 @@
 .daily-events-column.drop-target {
     background: rgba(66, 133, 244, 0.1) !important;
 }
+
+/* Weekly Layout with ToDo Panel */
+.weekly-layout {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.weekly-calendar {
+    flex: 1;
+    min-width: 0;
+}
+
+/* ToDo Panel */
+.weekly-todo-panel {
+    width: 240px;
+    flex-shrink: 0;
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    max-height: calc(100vh - 280px);
+    overflow-y: auto;
+}
+
+.weekly-todo-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+}
+
+.weekly-todo-subtitle {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin: 0 0 var(--spacing-md) 0;
+}
+
+.weekly-todo-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.weekly-todo-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-sm);
+    cursor: grab;
+    transition: all var(--transition-fast);
+}
+
+.weekly-todo-item:hover {
+    background: var(--color-bg-primary);
+    transform: translateX(2px);
+}
+
+.weekly-todo-item:active {
+    cursor: grabbing;
+}
+
+.weekly-todo-item.dragging {
+    opacity: 0.5;
+    transform: scale(0.98);
+}
+
+.todo-priority-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.todo-priority-dot.high {
+    background: var(--color-priority-high);
+}
+
+.todo-priority-dot.medium {
+    background: var(--color-priority-medium);
+}
+
+.todo-priority-dot.low {
+    background: var(--color-priority-low);
+}
+
+.todo-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.todo-name {
+    display: block;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.todo-due {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+}
+
+.weekly-todo-empty {
+    text-align: center;
+    color: var(--color-text-muted);
+    padding: var(--spacing-lg);
+    font-size: 0.85rem;
+}
