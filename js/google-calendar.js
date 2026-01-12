@@ -394,13 +394,20 @@ Google Calendar API のセットアップが必要です：
                 event.start = { date: eventData.startDate };
                 event.end = { date: this.addDays(eventData.endDate || eventData.startDate, 1) };
             } else {
-                // 時間指定イベント
-                event.start = { dateTime: eventData.startTime, timeZone: 'Asia/Tokyo' };
-                event.end = { dateTime: eventData.endTime || this.addHours(eventData.startTime, 1), timeZone: 'Asia/Tokyo' };
+                // 時間指定イベント - datetime-localをISO8601に変換
+                const startDateTime = this.toISODateTime(eventData.startTime);
+                const endDateTime = eventData.endTime
+                    ? this.toISODateTime(eventData.endTime)
+                    : this.addHours(startDateTime, 1);
+
+                event.start = { dateTime: startDateTime, timeZone: 'Asia/Tokyo' };
+                event.end = { dateTime: endDateTime, timeZone: 'Asia/Tokyo' };
             }
 
+            const calendarId = eventData.calendarId || 'primary';
+
             const response = await gapi.client.calendar.events.insert({
-                calendarId: 'primary',
+                calendarId: calendarId,
                 resource: event,
             });
 
@@ -410,9 +417,17 @@ Google Calendar API のセットアップが必要です：
             return response.result;
         } catch (error) {
             console.error('イベント作成エラー:', error);
-            UI.showToast('予定の追加に失敗しました', 'error');
+            UI.showToast('予定の追加に失敗しました: ' + (error.result?.error?.message || error.message), 'error');
             return null;
         }
+    },
+
+    // datetime-localをISO8601形式に変換
+    toISODateTime(datetimeLocal) {
+        // datetime-local形式: 2026-01-12T14:30
+        // ISO8601形式: 2026-01-12T14:30:00+09:00
+        if (!datetimeLocal) return null;
+        return datetimeLocal + ':00+09:00';
     },
 
     addHours(dateTimeStr, hours) {
@@ -426,17 +441,53 @@ Google Calendar API のセットアップが必要です：
         const modal = document.getElementById('googleEventModal');
         const form = document.getElementById('googleEventForm');
         const startDate = document.getElementById('googleEventStartDate');
+        const startTime = document.getElementById('googleEventStartTime');
         const allDayCheckbox = document.getElementById('googleEventAllDay');
+        const calendarSelect = document.getElementById('googleEventCalendar');
 
         form.reset();
         allDayCheckbox.checked = true;
         this.toggleTimeFields(true);
 
         // デフォルト日付設定
-        const today = defaultDate || new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const today = defaultDate || now.toISOString().split('T')[0];
         startDate.value = today;
 
+        // デフォルト時刻設定
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(Math.ceil(now.getMinutes() / 30) * 30).padStart(2, '0');
+        startTime.value = `${today}T${hours}:${minutes === '60' ? '00' : minutes}`;
+
+        // カレンダードロップダウンを更新
+        this.populateCalendarSelect(calendarSelect);
+
         modal.classList.add('active');
+    },
+
+    populateCalendarSelect(selectElement) {
+        if (!selectElement) return;
+
+        selectElement.innerHTML = '';
+
+        // 書き込み可能なカレンダーのみ表示
+        const writableCalendars = this.calendars.filter(cal =>
+            cal.accessRole === 'owner' || cal.accessRole === 'writer'
+        );
+
+        if (writableCalendars.length === 0) {
+            selectElement.innerHTML = '<option value="primary">メインカレンダー</option>';
+            return;
+        }
+
+        writableCalendars.forEach(cal => {
+            const option = document.createElement('option');
+            option.value = cal.id;
+            option.textContent = cal.summary;
+            option.style.color = cal.backgroundColor;
+            if (cal.primary) option.selected = true;
+            selectElement.appendChild(option);
+        });
     },
 
     closeEventModal() {
@@ -464,6 +515,7 @@ Google Calendar API のセットアップが必要です：
         const eventData = {
             title: document.getElementById('googleEventTitle').value,
             description: document.getElementById('googleEventDescription').value,
+            calendarId: document.getElementById('googleEventCalendar').value,
             allDay: allDay,
         };
 
