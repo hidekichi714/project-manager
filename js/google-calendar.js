@@ -7,7 +7,7 @@ const GoogleCalendar = {
     API_KEY: 'AIzaSyD9NRHbJpngxYvOxVhBlBkdgsunCZHooXs',
     CLIENT_ID: '170943366688-nchj26gtkncu6s3t9rp4hn15hea45ssh.apps.googleusercontent.com',
     DISCOVERY_DOC: 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
-    SCOPES: 'https://www.googleapis.com/auth/calendar.readonly',
+    SCOPES: 'https://www.googleapis.com/auth/calendar.events',
 
     // 状態
     initialized: false,
@@ -214,6 +214,75 @@ Google Calendar API のセットアップが必要です：
             }
             if (disconnectBtn) disconnectBtn.classList.add('hidden');
         }
+    },
+
+    // タスクをGoogleカレンダーに追加
+    async addTaskToCalendar(task, project) {
+        if (!this.connected) {
+            // 未接続の場合は接続を試行
+            await this.connect();
+            // 接続後も未接続なら中断
+            if (!this.connected) {
+                UI.showToast('Googleカレンダーに接続してください', 'warning');
+                return null;
+            }
+        }
+
+        try {
+            const event = {
+                summary: task.name,
+                description: `${project ? project.name + ' - ' : ''}${task.description || ''}
+ステータス: ${this.getStatusLabel(task.status)}
+優先度: ${this.getPriorityLabel(task.priority)}`,
+                start: {
+                    date: task.startDate,
+                },
+                end: {
+                    date: this.addDays(task.endDate, 1), // 終日イベントは翌日を指定
+                },
+                colorId: this.getPriorityColorId(task.priority),
+            };
+
+            const response = await gapi.client.calendar.events.insert({
+                calendarId: 'primary',
+                resource: event,
+            });
+
+            console.log('Googleカレンダーに追加:', response.result);
+            UI.showToast('Googleカレンダーに追加しました', 'success');
+
+            // イベント一覧を再取得
+            this.fetchEvents();
+
+            return response.result;
+        } catch (error) {
+            console.error('カレンダー追加エラー:', error);
+            UI.showToast('カレンダーへの追加に失敗しました', 'error');
+            return null;
+        }
+    },
+
+    // ヘルパーメソッド
+    addDays(dateStr, days) {
+        const date = new Date(dateStr);
+        date.setDate(date.getDate() + days);
+        return date.toISOString().split('T')[0];
+    },
+
+    getStatusLabel(status) {
+        const labels = { 'todo': '未着手', 'in-progress': '進行中', 'done': '完了', 'on-hold': '保留' };
+        return labels[status] || status;
+    },
+
+    getPriorityLabel(priority) {
+        const labels = { 'high': '高', 'medium': '中', 'low': '低' };
+        return labels[priority] || priority;
+    },
+
+    getPriorityColorId(priority) {
+        // Google Calendar color IDs: 11=赤, 5=黄, 2=緑
+        const colors = { 'high': '11', 'medium': '5', 'low': '2' };
+        return colors[priority] || '9';
     }
 };
 

@@ -80,6 +80,8 @@ const UI = {
             taskProgress: document.getElementById('taskProgress'),
             taskProgressValue: document.getElementById('taskProgressValue'),
             taskDescription: document.getElementById('taskDescription'),
+            taskReminderDate: document.getElementById('taskReminderDate'),
+            taskAddToGoogleCalendar: document.getElementById('taskAddToGoogleCalendar'),
 
             // Category Modal
             categoryModal: document.getElementById('categoryModal'),
@@ -317,6 +319,8 @@ const UI = {
             elements.taskProgress.value = task.progress || 0;
             elements.taskProgressValue.textContent = task.progress || 0;
             elements.taskDescription.value = task.description || '';
+            elements.taskReminderDate.value = task.reminderDate || '';
+            elements.taskAddToGoogleCalendar.checked = false;
             elements.taskDelete.style.display = 'block';
         } else {
             elements.taskModalTitle.textContent = 'タスク追加';
@@ -325,6 +329,8 @@ const UI = {
             elements.taskProjectId.value = projectId;
             elements.taskProgress.value = 0;
             elements.taskProgressValue.textContent = '0';
+            elements.taskReminderDate.value = '';
+            elements.taskAddToGoogleCalendar.checked = false;
             elements.taskDelete.style.display = 'none';
 
             // プロジェクト期間をデフォルトに
@@ -337,7 +343,7 @@ const UI = {
         this.openModal(elements.taskModal);
     },
 
-    handleTaskSubmit(e) {
+    async handleTaskSubmit(e) {
         e.preventDefault();
         const { elements } = this;
 
@@ -350,14 +356,32 @@ const UI = {
             startDate: elements.taskStartDate.value,
             endDate: elements.taskEndDate.value,
             progress: parseInt(elements.taskProgress.value),
-            description: elements.taskDescription.value
+            description: elements.taskDescription.value,
+            reminderDate: elements.taskReminderDate.value || null
         };
 
-        Storage.saveTask(task);
+        // リマインダー設定時に通知許可を確認
+        if (task.reminderDate && typeof Reminder !== 'undefined' && !Reminder.permitted) {
+            await Reminder.requestPermission();
+        }
+
+        const savedTask = Storage.saveTask(task);
+
+        // Googleカレンダーに追加
+        if (elements.taskAddToGoogleCalendar.checked && typeof GoogleCalendar !== 'undefined') {
+            const project = Storage.getProject(task.projectId);
+            await GoogleCalendar.addTaskToCalendar(savedTask, project);
+        }
+
         this.closeModal(elements.taskModal);
         this.showToast('タスクを保存しました', 'success');
         Gantt.render();
         this.renderProjectList();
+
+        // カレンダービュー更新
+        if (typeof Calendar !== 'undefined') {
+            Calendar.render();
+        }
     },
 
     handleTaskDelete() {
@@ -421,11 +445,33 @@ const UI = {
                     <span class="category-color" style="background: ${cat.color}"></span>
                     <span class="category-name">${this.escapeHtml(cat.name)}</span>
                     <span class="category-count">${counts[cat.id] || 0}</span>
+                    <button class="category-delete" data-id="${cat.id}" title="削除">×</button>
                 </li>
             `;
         });
 
         categoryList.innerHTML = html;
+        this.bindCategoryEvents();
+    },
+
+    // カテゴリイベントバインド
+    bindCategoryEvents() {
+        // 削除ボタン
+        document.querySelectorAll('.category-delete').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const catId = btn.dataset.id;
+                const category = Storage.getCategories().find(c => c.id === catId);
+                if (category && confirm(`「${category.name}」を削除しますか？\n関連するプロジェクトはカテゴリなしになります。`)) {
+                    Storage.deleteCategory(catId);
+                    this.showToast('カテゴリを削除しました', 'success');
+                    this.renderCategories();
+                    this.updateCategorySelect();
+                    Gantt.render();
+                    this.renderProjectList();
+                }
+            });
+        });
     },
 
     selectCategory(categoryId) {

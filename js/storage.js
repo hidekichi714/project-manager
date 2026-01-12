@@ -69,7 +69,7 @@ const Storage = {
     saveProject(project) {
         const projects = this.getProjects();
         const now = new Date().toISOString();
-        
+
         if (project.id) {
             const index = projects.findIndex(p => p.id === project.id);
             if (index !== -1) {
@@ -81,7 +81,7 @@ const Storage = {
             project.updatedAt = now;
             projects.push(project);
         }
-        
+
         this.set(this.KEYS.PROJECTS, projects);
         return project;
     },
@@ -90,7 +90,7 @@ const Storage = {
         let projects = this.getProjects();
         projects = projects.filter(p => p.id !== id);
         this.set(this.KEYS.PROJECTS, projects);
-        
+
         // 関連タスクも削除
         let tasks = this.getTasks();
         tasks = tasks.filter(t => t.projectId !== id);
@@ -114,7 +114,7 @@ const Storage = {
     saveTask(task) {
         const tasks = this.getTasks();
         const now = new Date().toISOString();
-        
+
         if (task.id) {
             const index = tasks.findIndex(t => t.id === task.id);
             if (index !== -1) {
@@ -126,7 +126,7 @@ const Storage = {
             task.updatedAt = now;
             tasks.push(task);
         }
-        
+
         this.set(this.KEYS.TASKS, tasks);
         return task;
     },
@@ -144,7 +144,7 @@ const Storage = {
 
     saveCategory(category) {
         const categories = this.getCategories();
-        
+
         if (category.id) {
             const index = categories.findIndex(c => c.id === category.id);
             if (index !== -1) {
@@ -154,7 +154,7 @@ const Storage = {
             category.id = this.generateId('cat');
             categories.push(category);
         }
-        
+
         this.set(this.KEYS.CATEGORIES, categories);
         return category;
     },
@@ -163,6 +163,16 @@ const Storage = {
         let categories = this.getCategories();
         categories = categories.filter(c => c.id !== id);
         this.set(this.KEYS.CATEGORIES, categories);
+
+        // 関連プロジェクトのカテゴリをクリア
+        let projects = this.getProjects();
+        projects = projects.map(p => {
+            if (p.category === id) {
+                return { ...p, category: '' };
+            }
+            return p;
+        });
+        this.set(this.KEYS.PROJECTS, projects);
     },
 
     // 設定
@@ -193,12 +203,12 @@ const Storage = {
         if (!data.version) {
             throw new Error('無効なデータ形式です');
         }
-        
+
         if (data.projects) this.set(this.KEYS.PROJECTS, data.projects);
         if (data.tasks) this.set(this.KEYS.TASKS, data.tasks);
         if (data.categories) this.set(this.KEYS.CATEGORIES, data.categories);
         if (data.settings) this.set(this.KEYS.SETTINGS, data.settings);
-        
+
         return true;
     },
 
