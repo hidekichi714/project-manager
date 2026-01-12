@@ -323,6 +323,42 @@
     box-shadow: var(--shadow-lg);
 }
 
+/* Resize Handles for Vertical Events */
+.weekly-event,
+.daily-event {
+    overflow: visible !important;
+    /* Handles are outside or near the edge */
+}
+
+.event-resize-handle {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: rgba(0, 0, 0, 0.1);
+    cursor: ns-resize;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+.weekly-event:hover .event-resize-handle,
+.daily-event:hover .event-resize-handle {
+    opacity: 1;
+}
+
+.event-resize-top {
+    top: 0;
+}
+
+.event-resize-bottom {
+    bottom: 0;
+}
+
+.event-resize-handle:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
 .weekly-hour-slot.drop-target,
 .daily-hour-slot.drop-target {
     background: var(--color-accent-light) !important;

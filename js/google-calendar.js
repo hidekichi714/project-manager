@@ -584,6 +584,15 @@ document.addEventListener('DOMContentLoaded', () => {
         GoogleCalendar.openEventModal();
     });
 
+    // サイドバー予定追加ボタン
+    document.getElementById('sidebarAddEvent')?.addEventListener('click', () => {
+        if (!GoogleCalendar.connected) {
+            GoogleCalendar.connect();
+            return;
+        }
+        GoogleCalendar.openEventModal();
+    });
+
     // モーダル閉じる
     document.getElementById('googleEventModalClose')?.addEventListener('click', () => {
         GoogleCalendar.closeEventModal();

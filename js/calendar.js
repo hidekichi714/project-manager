@@ -58,6 +58,7 @@ const Calendar = {
 
         container.innerHTML = `<div class="calendar-grid">${html}</div>`;
         this.bindDayEvents();
+        this.initDragDrop();
     },
 
     // ヘッダー（曜日）
@@ -165,7 +166,9 @@ const Calendar = {
                 const title = event.summary || '(タイトルなし)';
                 const color = event.calendarColor || '#4285f4';
                 return `
-                    <div class="calendar-event google" 
+                    <div class="calendar-event type-google" 
+                         data-event-id="${event.id}"
+                         data-calendar-id="${event.calendarId || 'primary'}"
                          style="background: ${color}20; border-left-color: ${color};"
                          title="${event.calendarName}: ${UI.escapeHtml(title)}">
                         ${UI.escapeHtml(title)}
@@ -208,6 +211,73 @@ const Calendar = {
         const m = String(date.getMonth() + 1).padStart(2, '0');
         const d = String(date.getDate()).padStart(2, '0');
         return `${y}-${m}-${d}`;
+    },
+
+    // ドラッグ&ドロップ初期化
+    initDragDrop() {
+        // Googleイベントをドラッグ可能に
+        document.querySelectorAll('.calendar-event.type-google').forEach(el => {
+            const eventId = el.dataset.eventId;
+            const calendarId = el.dataset.calendarId;
+            if (!eventId) return;
+
+            el.setAttribute('draggable', 'true');
+            el.classList.add('draggable-calendar-event');
+
+            el.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', JSON.stringify({
+                    type: 'google-event',
+                    eventId: eventId,
+                    calendarId: calendarId || 'primary'
+                }));
+                el.classList.add('dragging');
+            });
+
+            el.addEventListener('dragend', () => {
+                el.classList.remove('dragging');
+            });
+        });
+
+        // 日付セルをドロップ先に
+        document.querySelectorAll('.calendar-day').forEach(cell => {
+            cell.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                cell.classList.add('drop-target');
+            });
+
+            cell.addEventListener('dragleave', () => {
+                cell.classList.remove('drop-target');
+            });
+
+            cell.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                cell.classList.remove('drop-target');
+
+                try {
+                    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                    const newDate = cell.dataset.date;
+
+                    if (data.type === 'google-event' && typeof GoogleCalendar !== 'undefined') {
+                        // 終日イベントとして移動
+                        const nextDay = new Date(newDate);
+                        nextDay.setDate(nextDay.getDate() + 1);
+                        const endDate = this.formatDate(nextDay);
+
+                        await GoogleCalendar.updateEvent(
+                            data.eventId,
+                            data.calendarId,
+                            newDate,
+                            endDate,
+                            true
+                        );
+
+                        this.render();
+                    }
+                } catch (error) {
+                    console.error('Calendar drop error:', error);
+                }
+            });
+        });
     }
 };
 

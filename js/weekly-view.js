@@ -16,6 +16,18 @@ const WeeklyView = {
     // 初期化
     init() {
         this.bindEvents();
+        this.resizeState = {
+            isResizing: false,
+            type: null, // 'top' or 'bottom'
+            eventId: null,
+            calendarId: null,
+            startMinutes: 0,
+            duration: 0,
+            originalY: 0,
+            originalHeight: 0,
+            originalTop: 0,
+            element: null
+        };
     },
 
     bindEvents() {
@@ -234,20 +246,21 @@ const WeeklyView = {
         `;
     },
 
-    renderGoogleEventBlock(event, startHour, slotHeight) {
+    renderGoogleEventBlock(event, startHour, slotHeight, isDaily = false) {
         const eventId = event.id;
         const calendarId = event.calendarId || 'primary';
         const isAllDay = !event.start.dateTime;
+        const baseClass = isDaily ? 'daily-event' : 'weekly-event';
 
         if (isAllDay) {
             // 終日イベント
             return `
-                <div class="weekly-event google all-day draggable-event" 
+                <div class="${baseClass} google all-day draggable-event" 
                      draggable="true"
                      data-event-id="${eventId}"
                      data-calendar-id="${calendarId}"
                      data-all-day="true"
-                     style="top: 0; height: 24px; background: ${event.calendarColor || '#4285f4'}20; border-left-color: ${event.calendarColor || '#4285f4'};">
+                     style="top: 0; height: ${isDaily ? '28px' : '24px'}; background: ${event.calendarColor || '#4285f4'}20; border-left-color: ${event.calendarColor || '#4285f4'};">
                     <span class="event-title">${UI.escapeHtml(event.summary || '(タイトルなし)')}</span>
                 </div>
             `;
@@ -260,20 +273,22 @@ const WeeklyView = {
         const duration = (endTime - startTime) / (1000 * 60);
 
         const top = (startMinutes / 60) * slotHeight;
-        const height = Math.max((duration / 60) * slotHeight, 24);
+        const height = Math.max((duration / 60) * slotHeight, isDaily ? 28 : 24);
 
         if (top < 0) return '';
 
         return `
-            <div class="weekly-event google draggable-event" 
+            <div class="${baseClass} google draggable-event" 
                  draggable="true"
                  data-event-id="${eventId}"
                  data-calendar-id="${calendarId}"
                  data-duration="${duration}"
                  data-all-day="false"
                  style="top: ${top}px; height: ${height}px; background: ${event.calendarColor || '#4285f4'}30; border-left-color: ${event.calendarColor || '#4285f4'};">
-                <span class="event-time">${this.formatTime(startTime)}</span>
+                <div class="event-resize-handle event-resize-top"></div>
+                <span class="event-time">${this.formatTime(startTime)}${isDaily ? ' - ' + this.formatTime(endTime) : ''}</span>
                 <span class="event-title">${UI.escapeHtml(event.summary || '(タイトルなし)')}</span>
+                <div class="event-resize-handle event-resize-bottom"></div>
             </div>
         `;
     },
@@ -325,13 +340,13 @@ const WeeklyView = {
         html += '</div>';
 
         // イベントカラム
-        html += '<div class="daily-events-column">';
+        html += '<div class="daily-events-column" data-date="' + this.formatDate(this.currentDate) + '">';
 
         hours.forEach(hour => {
             html += `<div class="daily-hour-slot" data-hour="${hour}" style="height: ${slotHeight}px"></div>`;
         });
 
-        // 終日イベント
+        // 終日イベント（タスク）
         tasks.forEach(task => {
             html += `
                 <div class="daily-event task priority-${task.priority}" 
@@ -344,34 +359,7 @@ const WeeklyView = {
 
         // Googleイベント
         googleEvents.forEach(event => {
-            if (!event.start.dateTime) {
-                html += `
-                    <div class="daily-event google all-day" 
-                         style="top: 0; height: 28px; background: ${event.calendarColor || '#4285f4'}20; border-left-color: ${event.calendarColor || '#4285f4'};">
-                        <span class="event-title">${UI.escapeHtml(event.summary || '(タイトルなし)')}</span>
-                    </div>
-                `;
-                return;
-            }
-
-            const startTime = new Date(event.start.dateTime);
-            const endTime = new Date(event.end.dateTime);
-
-            const startMinutes = (startTime.getHours() - startHour) * 60 + startTime.getMinutes();
-            const duration = (endTime - startTime) / (1000 * 60);
-
-            const top = (startMinutes / 60) * slotHeight;
-            const height = Math.max((duration / 60) * slotHeight, 28);
-
-            if (top >= 0) {
-                html += `
-                    <div class="daily-event google" 
-                         style="top: ${top}px; height: ${height}px; background: ${event.calendarColor || '#4285f4'}20; border-left-color: ${event.calendarColor || '#4285f4'};">
-                        <span class="event-time">${this.formatTime(startTime)} - ${this.formatTime(endTime)}</span>
-                        <span class="event-title">${UI.escapeHtml(event.summary || '(タイトルなし)')}</span>
-                    </div>
-                `;
-            }
+            html += this.renderGoogleEventBlock(event, startHour, slotHeight, true);
         });
 
         html += '</div></div>';
@@ -389,6 +377,9 @@ const WeeklyView = {
 
         // ドラッグ&ドロップハンドラー
         this.bindDragDrop();
+
+        // リサイズハンドラー
+        this.initResize();
     },
 
     bindDragDrop() {
@@ -496,7 +487,7 @@ const WeeklyView = {
         });
 
         // 日付カラムへのドロップを追加
-        document.querySelectorAll('.weekly-day-column').forEach(column => {
+        document.querySelectorAll('.weekly-day-column, .daily-events-column').forEach(column => {
             column.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 column.classList.add('drop-target');
@@ -526,13 +517,131 @@ const WeeklyView = {
                         });
 
                         UI.showToast('Google Calendarに予定を追加しました', 'success');
-                        this.renderWeekly();
+                        const activeView = document.querySelector('.view-container:not(.hidden)')?.id;
+                        if (activeView === 'weeklyView') {
+                            this.renderWeekly();
+                        } else {
+                            this.renderDaily();
+                        }
                     }
                 } catch (error) {
                     console.error('Todo drop error:', error);
                 }
             });
         });
+    },
+
+    // リサイズ機能の初期化
+    initResize() {
+        const container = document.querySelector('.main-content');
+        if (!container) return;
+
+        container.addEventListener('mousedown', (e) => {
+            const handle = e.target.closest('.event-resize-handle');
+            if (!handle) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const eventBlock = handle.closest('.weekly-event, .daily-event');
+            if (!eventBlock) return;
+
+            const isTop = handle.classList.contains('event-resize-top');
+
+            this.resizeState = {
+                isResizing: true,
+                type: isTop ? 'top' : 'bottom',
+                eventId: eventBlock.dataset.eventId,
+                calendarId: eventBlock.dataset.calendarId,
+                originalY: e.clientY,
+                originalTop: parseInt(eventBlock.style.top) || 0,
+                originalHeight: parseInt(eventBlock.style.height) || 0,
+                element: eventBlock,
+                duration: parseInt(eventBlock.dataset.duration) || 60
+            };
+
+            eventBlock.classList.add('resizing');
+
+            // マウス移動と終了のイベントを登録
+            const moveHandler = (moveEvent) => this.handleResizeMove(moveEvent);
+            const upHandler = () => {
+                this.handleResizeEnd();
+                window.removeEventListener('mousemove', moveHandler);
+                window.removeEventListener('mouseup', upHandler);
+            };
+
+            window.addEventListener('mousemove', moveHandler);
+            window.addEventListener('mouseup', upHandler);
+        });
+    },
+
+    handleResizeMove(e) {
+        if (!this.resizeState.isResizing) return;
+
+        const deltaY = e.clientY - this.resizeState.originalY;
+        const { type, originalTop, originalHeight, element } = this.resizeState;
+        const slotHeight = this.config.slotHeight;
+
+        if (type === 'bottom') {
+            const newHeight = Math.max(slotHeight / 4, originalHeight + deltaY);
+            element.style.height = `${newHeight}px`;
+        } else if (type === 'top') {
+            const newTop = originalTop + deltaY;
+            const newHeight = Math.max(slotHeight / 4, originalHeight - deltaY);
+
+            if (newHeight > slotHeight / 4) {
+                element.style.top = `${newTop}px`;
+                element.style.height = `${newHeight}px`;
+            }
+        }
+    },
+
+    async handleResizeEnd() {
+        if (!this.resizeState.isResizing) return;
+
+        const { element, eventId, calendarId } = this.resizeState;
+        element.classList.remove('resizing');
+        this.resizeState.isResizing = false;
+
+        const top = parseInt(element.style.top) || 0;
+        const height = parseInt(element.style.height) || 0;
+        const slotHeight = this.config.slotHeight;
+        const startHour = this.config.startHour;
+
+        // 新しい開始時間と終了時間を計算
+        const startMinutesTotal = (top / slotHeight) * 60;
+        const durationMinutes = (height / slotHeight) * 60;
+
+        const startH = Math.floor(startMinutesTotal / 60) + startHour;
+        const startM = Math.round((startMinutesTotal % 60) / 15) * 15; // 15分単位にスナップ
+
+        const column = element.closest('.weekly-day-column, .daily-events-column');
+        const dateStr = column?.dataset?.date || this.formatDate(this.currentDate);
+
+        const newStart = new Date(`${dateStr}T${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}:00`);
+        const newEnd = new Date(newStart.getTime() + durationMinutes * 60000);
+
+        try {
+            await GoogleCalendar.updateEvent(
+                eventId,
+                calendarId,
+                newStart.toISOString(),
+                newEnd.toISOString(),
+                false
+            );
+            UI.showToast('予定の期間を更新しました', 'success');
+        } catch (error) {
+            console.error('Resize update error:', error);
+            UI.showToast('予定の更新に失敗しました', 'warning');
+        }
+
+        // ビュー再描画
+        const activeView = document.querySelector('.view-container:not(.hidden)')?.id;
+        if (activeView === 'weeklyView') {
+            this.renderWeekly();
+        } else {
+            this.renderDaily();
+        }
     },
 
     // ユーティリティ
