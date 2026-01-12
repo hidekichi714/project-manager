@@ -1,0 +1,192 @@
+/* Priority View Container */
+#priorityView {
+    padding: var(--spacing-xl);
+    height: 100%;
+    overflow-y: auto;
+}
+
+.priority-header {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.priority-header h2 {
+    font-size: 2rem;
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.priority-header p {
+    color: var(--color-text-secondary);
+}
+
+/* Eisenhower Matrix */
+.matrix-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: var(--spacing-md);
+    height: calc(100vh - 200px);
+    min-height: 500px;
+}
+
+.matrix-quadrant {
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+}
+
+.matrix-quadrant.drag-over {
+    box-shadow: 0 0 0 2px var(--color-accent-primary);
+    background: var(--color-bg-tertiary);
+}
+
+.quadrant-header {
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+}
+
+.q1 .quadrant-header {
+    background-color: #FEE2E2;
+    color: #991B1B;
+}
+
+/* Red */
+.q2 .quadrant-header {
+    background-color: #DBEAFE;
+    color: #1E40AF;
+}
+
+/* Blue */
+.q3 .quadrant-header {
+    background-color: #FEF3C7;
+    color: #92400E;
+}
+
+/* Yellow */
+.q4 .quadrant-header {
+    background-color: #F3F4F6;
+    color: #374151;
+}
+
+/* Gray */
+
+.quadrant-content {
+    flex: 1;
+    padding: var(--spacing-md);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.matrix-task-card {
+    background: white;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border);
+    cursor: grab;
+    font-size: 0.9rem;
+}
+
+.matrix-task-card:active {
+    cursor: grabbing;
+}
+
+/* Eat The Frog */
+.frog-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: var(--spacing-2xl);
+}
+
+.frog-stage {
+    width: 300px;
+    height: 300px;
+    background: var(--color-bg-secondary);
+    border-radius: 50%;
+    border: 4px dashed var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all 0.3s;
+}
+
+.frog-stage.drag-over {
+    border-color: var(--color-success);
+    background: #ECFDF5;
+    transform: scale(1.05);
+}
+
+.frog-stage.has-frog {
+    border-style: solid;
+    border-color: var(--color-success);
+    background: #ECFDF5;
+}
+
+.frog-placeholder {
+    text-align: center;
+    color: var(--color-text-muted);
+}
+
+.frog-icon {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+.frog-task-card {
+    text-align: center;
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.frog-task-card h3 {
+    font-size: 1.25rem;
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-md);
+}
+
+#removeFrogBtn {
+    background: transparent;
+    border: 1px solid var(--color-danger);
+    color: var(--color-danger);
+    padding: 4px 12px;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.frog-candidates {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.candidate-card {
+    background: var(--color-bg-secondary);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-sm);
+    border: 1px solid var(--color-border);
+    cursor: grab;
+}
+
+@keyframes popIn {
+    from {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}

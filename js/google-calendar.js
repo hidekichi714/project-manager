@@ -267,26 +267,6 @@ Google Calendar API のセットアップが必要です：
         const disconnectBtn = document.getElementById('disconnectGoogleCalendar');
 
         if (!this.API_KEY || !this.CLIENT_ID) {
-            if (status) status.textContent = '未設定';
-            if (connectBtn) {
-                connectBtn.textContent = 'セットアップ';
-                connectBtn.onclick = () => this.showSetupInstructions();
-            }
-            return;
-        }
-
-        if (this.connected) {
-            if (status) {
-                status.textContent = '接続中';
-                status.classList.add('connected');
-            }
-            if (connectBtn) connectBtn.classList.add('hidden');
-            if (disconnectBtn) disconnectBtn.classList.remove('hidden');
-            // カレンダーセレクター表示
-            const selectorContainer = document.getElementById('calendarSelectorContainer');
-            if (selectorContainer) selectorContainer.classList.remove('hidden');
-            // 予定追加ボタン表示
-            const addEventBtn = document.getElementById('addGoogleEvent');
             if (addEventBtn) addEventBtn.classList.remove('hidden');
         } else {
             if (status) {
@@ -468,6 +448,83 @@ Google Calendar API のセットアップが必要です：
             console.error('イベント更新エラー:', error);
             UI.showToast('予定の移動に失敗しました', 'error');
             return null;
+        }
+    },
+
+    // カレンダーリスト取得
+    async listCalendars() {
+        if (!this.connected) return [];
+
+        try {
+            const response = await gapi.client.calendar.calendarList.list();
+            this.calendars = response.result.items;
+            return this.calendars;
+        } catch (error) {
+            console.error('Google Calendar リスト取得エラー:', error);
+            return [];
+        }
+    },
+
+    // イベント取得
+    async listUpcomingEvents() {
+        if (!this.connected) return;
+
+        // 選択されたカレンダーのみ対象にする（未実装時はprimaryのみ）
+        const calendarId = 'primary';
+
+        try {
+            const response = await gapi.client.calendar.events.list({
+                'calendarId': calendarId,
+                'timeMin': (new Date()).toISOString(),
+                'showDeleted': false,
+                'singleEvents': true,
+                'maxResults': 10,
+                'orderBy': 'startTime'
+            });
+
+            this.events = response.result.items;
+            this.updateUI();
+            return this.events;
+        } catch (error) {
+            console.error('Google Calendar イベント取得エラー:', error);
+        }
+    },
+
+    // イベント追加 (DnD対応)
+    async addEvent(eventData) {
+        if (!this.connected) {
+            alert('Google Calendarに接続されていません。');
+            return;
+        }
+
+        const event = {
+            'summary': eventData.title,
+            'description': eventData.description || '',
+            'start': {
+                'dateTime': eventData.start, // ISO String
+                'timeZone': Intl.DateTimeFormat().resolvedOptions().timeZone
+            },
+            'end': {
+                'dateTime': eventData.end, // ISO String
+                'timeZone': Intl.DateTimeFormat().resolvedOptions().timeZone
+            }
+        };
+
+        try {
+            await gapi.client.calendar.events.insert({
+                'calendarId': 'primary', // 将来的に選択可能に
+                'resource': event
+            });
+
+            // リロードして反映
+            await this.listUpcomingEvents();
+            // UI通知があれば良いが、とりあえずコンソールへ
+            console.log('Google Calendar イベント追加成功');
+            return true;
+        } catch (error) {
+            console.error('Google Calendar イベント追加エラー:', error);
+            alert('イベントの追加に失敗しました。');
+            return false;
         }
     },
 

@@ -505,9 +505,14 @@ textarea {
     gap: var(--spacing-md);
 }
 
-/* View Controls & Header */
+/* View Header */
 .view-header {
-    margin-bottom: var(--spacing-xl);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
+    /* Allow wrapping on small screens */
 }
 
 .view-title-container {
@@ -542,19 +547,31 @@ textarea {
 }
 
 .view-title {
-    font-size: 1.75rem;
+    font-size: 24px;
     font-weight: 700;
     color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    /* Ensure container behaves for flex children */
+    align-items: center;
+    gap: var(--spacing-sm);
+    min-width: 0;
+    /* Allow flex item to shrink properly */
 }
 
 .week-badge {
-    background: var(--color-bg-tertiary);
-    border: 1px solid var(--border-color);
-    padding: 6px 16px;
+    background: var(--color-accent-primary);
+    color: white;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border-radius: var(--radius-full);
     font-size: 0.85rem;
     font-weight: 500;
-    color: var(--color-text-secondary);
 }
 
 /* ===================================

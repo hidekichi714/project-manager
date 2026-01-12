@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="css/calendar.css">
     <link rel="stylesheet" href="css/weekly-view.css">
     <link rel="stylesheet" href="css/todo.css">
+    <link rel="stylesheet" href="css/priority.css">
 
     <title>プロジェクト管理ツール</title>
 </head>
@@ -33,10 +34,7 @@
         <!-- Header -->
         <header class="header">
             <div class="header-left">
-                <div class="header-logo">
-                    <span class="logo-icon">🔳</span>
-                    <span class="logo-text">Plan</span>
-                </div>
+                <!-- Logo removed -->
             </div>
 
             <nav class="header-nav">
@@ -84,10 +82,10 @@
                 <div class="sidebar-section">
                     <h2 class="sidebar-title">Prioritize</h2>
                     <ul class="prioritize-list">
-                        <li class="prioritize-item">
+                        <li class="prioritize-item" id="navEisenhower">
                             <span class="icon">⭕</span> Eisenhower Matrix
                         </li>
-                        <li class="prioritize-item">
+                        <li class="prioritize-item" id="navEatTheFrog">
                             <span class="icon">⭕</span> Eat The Frog First
                         </li>
                     </ul>
@@ -98,6 +96,9 @@
                     <button class="btn-calendar-add" id="sidebarAddEvent">
                         📅 予定を追加
                     </button>
+                    <div id="calendarList" class="calendar-list hidden">
+                        <!-- Calendar list will be rendered here -->
+                    </div>
                 </div>
 
                 <div class="sidebar-section sidebar-bottom">
@@ -235,6 +236,11 @@
                             <p class="empty-hint">「プロジェクト追加」ボタンから始めましょう</p>
                         </div>
                     </div>
+                </div>
+
+                <!-- Priority View -->
+                <div id="priorityView" class="view-container hidden">
+                    <!-- Priority content rendered by JS -->
                 </div>
             </main>
         </div>
@@ -543,6 +549,7 @@
     <script src="js/voice.js"></script>
     <script src="js/weekly-view.js"></script>
     <script src="js/todo.js"></script>
+    <script src="js/priority.js"></script>
     <script src="js/todoist.js"></script>
     <script src="js/notion.js"></script>
     <script src="js/app.js"></script>

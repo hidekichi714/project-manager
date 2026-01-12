@@ -41,6 +41,11 @@ const UI = {
             weeklyView: document.getElementById('weeklyView'),
             dailyView: document.getElementById('dailyView'),
             listView: document.getElementById('listView'),
+            priorityView: document.getElementById('priorityView'),
+
+            // Priority Nav
+            navEisenhower: document.getElementById('navEisenhower'),
+            navEatTheFrog: document.getElementById('navEatTheFrog'),
 
             // View Header (Date display)
             viewTitle: document.getElementById('viewTitle'),
@@ -100,8 +105,19 @@ const UI = {
             userModalClose: document.getElementById('userModalClose'),
             userName: document.getElementById('userName'),
             userEmail: document.getElementById('userEmail'),
-            logoutBtn: document.getElementById('logoutBtn')
+            logoutBtn: document.getElementById('logoutBtn'),
+
+            // Toast
+            toastContainer: document.getElementById('toastContainer') || this.createToastContainer()
         };
+    },
+
+    createToastContainer() {
+        const el = document.createElement('div');
+        el.id = 'toastContainer';
+        el.className = 'toast-container';
+        document.body.appendChild(el);
+        return el;
     },
 
     // イベントバインド
@@ -123,6 +139,15 @@ const UI = {
         // Common Nav Arrows (Date navigation)
         elements.prevBtn?.addEventListener('click', () => this.navigateDate(-1));
         elements.nextBtn?.addEventListener('click', () => this.navigateDate(1));
+
+        // Priority Navigation
+        elements.navEisenhower?.addEventListener('click', () => {
+            this.switchView('priority', 'eisenhower');
+        });
+
+        elements.navEatTheFrog?.addEventListener('click', () => {
+            this.switchView('priority', 'frog');
+        });
 
         // Project modal
         elements.addProjectBtn?.addEventListener('click', () => this.openProjectModal());
@@ -213,6 +238,7 @@ const UI = {
         if (!this.elements.weeklyView.classList.contains('hidden')) return 'weekly';
         if (!this.elements.dailyView.classList.contains('hidden')) return 'daily';
         if (!this.elements.listView.classList.contains('hidden')) return 'list';
+        if (!this.elements.priorityView.classList.contains('hidden')) return 'priority'; // Added this
         return 'gantt';
     },
 
@@ -237,47 +263,53 @@ const UI = {
     },
 
     // ビュー切り替え
-    switchView(view) {
-        const { viewGantt, viewCalendar, viewList, ganttView, calendarView, listView } = this.elements;
-        const viewWeekly = document.getElementById('viewWeekly');
-        const viewDaily = document.getElementById('viewDaily');
-        const weeklyView = document.getElementById('weeklyView');
-        const dailyView = document.getElementById('dailyView');
+    switchView(viewName, subType = null) {
+        const { elements } = this;
 
-        // 全て非アクティブ・非表示に
-        viewGantt?.classList.remove('active');
-        viewCalendar?.classList.remove('active');
-        viewList?.classList.remove('active');
-        viewWeekly?.classList.remove('active');
-        viewDaily?.classList.remove('active');
-        ganttView?.classList.add('hidden');
-        calendarView?.classList.add('hidden');
-        listView?.classList.add('hidden');
-        weeklyView?.classList.add('hidden');
-        dailyView?.classList.add('hidden');
+        // Hide all views
+        [
+            elements.ganttView,
+            elements.calendarView,
+            elements.weeklyView,
+            elements.dailyView,
+            elements.listView,
+            elements.priorityView // Add this
+        ].forEach(el => el?.classList.add('hidden'));
 
-        // 選択されたビューをアクティブに
-        if (view === 'gantt') {
-            viewGantt?.classList.add('active');
-            ganttView?.classList.remove('hidden');
-            Gantt.render();
-        } else if (view === 'calendar') {
-            viewCalendar?.classList.add('active');
-            calendarView?.classList.remove('hidden');
-            Calendar.render();
-        } else if (view === 'weekly') {
-            viewWeekly?.classList.add('active');
-            weeklyView?.classList.remove('hidden');
+        // Show selected view
+        if (viewName === 'gantt') {
+            elements.ganttView.classList.remove('hidden');
+            if (typeof Gantt !== 'undefined') Gantt.init();
+        } else if (viewName === 'calendar') {
+            elements.calendarView.classList.remove('hidden');
+            if (typeof Calendar !== 'undefined') Calendar.render();
+        } else if (viewName === 'weekly') {
+            elements.weeklyView.classList.remove('hidden');
             if (typeof WeeklyView !== 'undefined') WeeklyView.renderWeekly();
-        } else if (view === 'daily') {
-            viewDaily?.classList.add('active');
-            dailyView?.classList.remove('hidden');
+        } else if (viewName === 'daily') {
+            elements.dailyView.classList.remove('hidden');
             if (typeof WeeklyView !== 'undefined') WeeklyView.renderDaily();
-        } else {
-            viewList?.classList.add('active');
-            listView?.classList.remove('hidden');
-            this.renderProjectList();
+        } else if (viewName === 'list') {
+            elements.listView.classList.remove('hidden');
+            // List view render logic?
+        } else if (viewName === 'priority') {
+            elements.priorityView.classList.remove('hidden');
+            if (typeof Priority !== 'undefined') {
+                if (subType === 'eisenhower') Priority.renderEisenhower();
+                if (subType === 'frog') Priority.renderEatTheFrog();
+            }
         }
+
+        // Update Nav Active State
+        elements.navItems.forEach(item => {
+            if (item.dataset.view === viewName) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+
+        // Clear manual active states for sidebar items if needed
     },
 
     // モーダル操作

@@ -218,7 +218,11 @@ const Calendar = {
     },
 
     // ドラッグ&ドロップ初期化
+    // ドラッグ&ドロップ初期化
     initDragDrop() {
+        const container = document.getElementById('calendarContainer');
+        if (!container) return;
+
         // Googleイベントをドラッグ可能に
         document.querySelectorAll('.calendar-event.type-google').forEach(el => {
             const eventId = el.dataset.eventId;
@@ -243,7 +247,7 @@ const Calendar = {
         });
 
         // 日付セルをドロップ先に
-        document.querySelectorAll('.calendar-day').forEach(cell => {
+        container.querySelectorAll('.calendar-day').forEach(cell => {
             cell.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 cell.classList.add('drop-target');
@@ -258,14 +262,21 @@ const Calendar = {
                 cell.classList.remove('drop-target');
 
                 try {
-                    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                    const dataRaw = e.dataTransfer.getData('text/plain');
+                    if (!dataRaw) return;
+
+                    const data = JSON.parse(dataRaw);
                     const newDate = cell.dataset.date;
 
+                    // Googleイベントの移動
                     if (data.type === 'google-event' && typeof GoogleCalendar !== 'undefined') {
-                        // 終日イベントとして移動
+                        // 終日イベントとして移動（簡易実装）
                         const nextDay = new Date(newDate);
                         nextDay.setDate(nextDay.getDate() + 1);
-                        const endDate = this.formatDate(nextDay);
+                        const y = nextDay.getFullYear();
+                        const m = String(nextDay.getMonth() + 1).padStart(2, '0');
+                        const d = String(nextDay.getDate()).padStart(2, '0');
+                        const endDate = `${y}-${m}-${d}`;
 
                         await GoogleCalendar.updateEvent(
                             data.eventId,
@@ -274,8 +285,24 @@ const Calendar = {
                             endDate,
                             true
                         );
-
+                        // 再描画はGoogleCalendar側で呼ばれるか、イベントリスナーで
                         this.render();
+                    }
+                    // ToDoタスクのドロップ (新規Googleカレンダー予定)
+                    else if (data.type === 'todo' && typeof GoogleCalendar !== 'undefined') {
+                        // 時間はデフォルト設定 (9:00 - 10:00)
+                        const startTime = new Date(newDate);
+                        startTime.setHours(9, 0, 0);
+
+                        const endTime = new Date(startTime);
+                        endTime.setHours(10, 0, 0);
+
+                        await GoogleCalendar.addEvent({
+                            title: data.title || '新しい予定',
+                            description: data.description || '',
+                            start: startTime.toISOString(),
+                            end: endTime.toISOString()
+                        });
                     }
                 } catch (error) {
                     console.error('Calendar drop error:', error);
