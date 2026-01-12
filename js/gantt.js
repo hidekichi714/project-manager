@@ -43,10 +43,16 @@ const Gantt = {
     },
 
     updatePeriodLabel() {
-        const label = document.getElementById('ganttPeriod');
-        if (label) {
+        const title = document.getElementById('viewTitle');
+        const weekNum = document.getElementById('viewWeekNum');
+
+        if (title) {
             const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-            label.textContent = `${this.currentDate.getFullYear()}年${months[this.currentDate.getMonth()]}`;
+            title.textContent = `${this.currentDate.getFullYear()}年${months[this.currentDate.getMonth()]}`;
+        }
+
+        if (weekNum) {
+            weekNum.classList.add('hidden');
         }
     },
 

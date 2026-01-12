@@ -1,61 +1,8 @@
-/* Weekly/Daily View Styles */
-
-/* Header */
-.weekly-controls,
-.daily-controls {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    margin-bottom: var(--spacing-lg);
-}
-
+/* Header Navigation (Merged with view-header in index.html) */
 .weekly-nav,
 .daily-nav {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-}
-
-.weekly-nav-btn,
-.daily-nav-btn {
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--color-bg-secondary);
-    border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-sm);
-    transition: all var(--transition-fast);
-}
-
-.weekly-nav-btn:hover,
-.daily-nav-btn:hover {
-    background: var(--color-accent-primary);
-    color: white;
-}
-
-.weekly-title,
-.daily-title {
-    font-size: 1.2rem;
-    font-weight: 600;
-    min-width: 200px;
-    text-align: center;
-}
-
-.weekly-today-btn,
-.daily-today-btn {
-    padding: var(--spacing-xs) var(--spacing-md);
-    background: var(--color-accent-primary);
-    color: white;
-    border-radius: var(--radius-sm);
-    font-size: 0.85rem;
-    transition: all var(--transition-fast);
-}
-
-.weekly-today-btn:hover,
-.daily-today-btn:hover {
-    background: var(--color-accent-secondary);
+    display: none;
+    /* Redundant now */
 }
 
 /* Weekly View Grid */
@@ -63,51 +10,54 @@
     display: flex;
     position: sticky;
     top: 0;
-    background: var(--color-bg-primary);
-    z-index: 10;
+    background: #FFFFFF;
+    z-index: 100;
     border-bottom: 1px solid var(--border-color);
 }
 
 .weekly-time-gutter {
-    width: 60px;
+    width: 72px;
     flex-shrink: 0;
 }
 
 .weekly-day-header {
     flex: 1;
-    padding: var(--spacing-md);
+    padding: var(--spacing-md) 0;
     text-align: center;
     border-left: 1px solid var(--border-color);
 }
 
 .weekly-day-header.today {
-    background: var(--color-accent-light);
+    background: transparent;
 }
 
 .weekly-day-header.weekend {
-    background: rgba(0, 0, 0, 0.02);
+    background: #F8FAFC;
 }
 
 .weekly-day-header .day-name {
     display: block;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
     color: var(--color-text-muted);
+    margin-bottom: 4px;
 }
 
 .weekly-day-header .day-number {
     display: block;
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: 600;
+    color: var(--color-text-secondary);
 }
 
 .weekly-day-header.today .day-number {
-    width: 32px;
-    height: 32px;
-    line-height: 32px;
-    margin: 0 auto;
-    background: var(--color-accent-primary);
-    color: white;
-    border-radius: 50%;
+    color: var(--color-accent-primary);
+    font-weight: 700;
+}
+
+.weekly-day-header.today .day-name {
+    color: var(--color-accent-primary);
 }
 
 /* Weekly Body */
@@ -152,48 +102,53 @@
 }
 
 /* Events in Weekly View */
-.weekly-event {
+.weekly-event,
+.daily-event {
     position: absolute;
-    left: 2px;
-    right: 2px;
-    padding: 2px 4px;
-    border-radius: 4px;
-    font-size: 0.75rem;
+    left: 4px;
+    right: 4px;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    font-size: 0.8rem;
     overflow: hidden;
-    cursor: pointer;
-    border-left: 3px solid;
+    cursor: grab;
+    border-left: 4px solid;
     transition: all var(--transition-fast);
     z-index: 5;
+    background: white;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
-.weekly-event:hover {
+.weekly-event:hover,
+.daily-event:hover {
     z-index: 10;
     box-shadow: var(--shadow-md);
+    transform: scale(1.02);
 }
 
-.weekly-event.task {
-    background: var(--color-accent-light);
+.weekly-event.task,
+.daily-event.task {
     border-left-color: var(--color-accent-primary);
 }
 
-.weekly-event.task.priority-high {
-    background: rgba(239, 68, 68, 0.15);
-    border-left-color: var(--color-priority-high);
-}
-
-.weekly-event.task.priority-medium {
-    background: rgba(245, 158, 11, 0.15);
-    border-left-color: var(--color-priority-medium);
-}
-
-.weekly-event.task.priority-low {
-    background: rgba(16, 185, 129, 0.15);
-    border-left-color: var(--color-priority-low);
-}
-
-.weekly-event.google {
-    background: rgba(66, 133, 244, 0.15);
+.weekly-event.google,
+.daily-event.google {
     border-left-color: #4285f4;
+}
+
+.weekly-event .event-title,
+.daily-event .event-title {
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.weekly-event .event-time,
+.daily-event .event-time {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
 }
 
 .weekly-event.all-day {

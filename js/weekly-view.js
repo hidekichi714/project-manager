@@ -31,12 +31,7 @@ const WeeklyView = {
     },
 
     bindEvents() {
-        document.getElementById('weeklyPrev')?.addEventListener('click', () => this.navigate(-1));
-        document.getElementById('weeklyNext')?.addEventListener('click', () => this.navigate(1));
-        document.getElementById('weeklyToday')?.addEventListener('click', () => this.goToToday());
-        document.getElementById('dailyPrev')?.addEventListener('click', () => this.navigateDaily(-1));
-        document.getElementById('dailyNext')?.addEventListener('click', () => this.navigateDaily(1));
-        document.getElementById('dailyToday')?.addEventListener('click', () => this.goToToday());
+        // Local navigation listeners removed as they are now handled by UI's common navigation
     },
 
     navigate(direction) {
@@ -83,10 +78,20 @@ const WeeklyView = {
             days.push(d);
         }
 
-        // タイトル更新
-        const title = document.getElementById('weeklyTitle');
+        // タイトルと週番号の更新
+        const title = document.getElementById('viewTitle');
+        const weekNum = document.getElementById('viewWeekNum');
+
         if (title) {
-            title.textContent = `${this.formatDateShort(weekStart)} - ${this.formatDateShort(weekEnd)}`;
+            const startStr = this.formatDateRange(weekStart);
+            const endStr = this.formatDateRange(weekEnd);
+            title.textContent = `${startStr} - ${endStr}`;
+        }
+
+        if (weekNum) {
+            const wNum = this.getWeekNumber(weekStart);
+            weekNum.textContent = `W${wNum < 10 ? '0' + wNum : wNum}`;
+            weekNum.classList.remove('hidden');
         }
 
         // タスク取得
@@ -302,10 +307,16 @@ const WeeklyView = {
         day.setHours(0, 0, 0, 0);
 
         // タイトル更新
-        const title = document.getElementById('dailyTitle');
+        const title = document.getElementById('viewTitle');
+        const weekNum = document.getElementById('viewWeekNum');
+
         if (title) {
             const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
             title.textContent = `${day.getFullYear()}年${day.getMonth() + 1}月${day.getDate()}日 (${dayNames[day.getDay()]})`;
+        }
+
+        if (weekNum) {
+            weekNum.classList.add('hidden');
         }
 
         const tasks = Storage.getTasks();
@@ -656,8 +667,24 @@ const WeeklyView = {
         return `${date.getMonth() + 1}/${date.getDate()}`;
     },
 
-    formatTime(date) {
-        return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    formatTime(minutes) {
+        const h = Math.floor(minutes / 60);
+        const m = minutes % 60;
+        return `${h}:${m.toString().padStart(2, '0')}`;
+    },
+
+    // 日付フォーマット (範囲用)
+    formatDateRange(date) {
+        return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+    },
+
+    // 週番号を取得
+    getWeekNumber(date) {
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        const dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
     }
 };
 

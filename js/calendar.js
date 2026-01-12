@@ -18,9 +18,7 @@ const Calendar = {
 
     // イベントバインド
     bindEvents() {
-        document.getElementById('calendarPrev')?.addEventListener('click', () => this.navigate(-1));
-        document.getElementById('calendarNext')?.addEventListener('click', () => this.navigate(1));
-        document.getElementById('calendarToday')?.addEventListener('click', () => this.goToToday());
+        // Local navigation listeners removed (handled by UI)
     },
 
     // ナビゲーション
@@ -43,9 +41,15 @@ const Calendar = {
         const month = this.currentDate.getMonth();
 
         // タイトル更新
-        const title = document.getElementById('calendarTitle');
+        const title = document.getElementById('viewTitle');
+        const weekNum = document.getElementById('viewWeekNum');
+
         if (title) {
             title.textContent = `${year}年${this.monthNames[month]}`;
+        }
+
+        if (weekNum) {
+            weekNum.classList.add('hidden');
         }
 
         // カレンダーグリッド生成

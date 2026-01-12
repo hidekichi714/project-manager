@@ -32,26 +32,33 @@
     <div class="app-container">
         <!-- Header -->
         <header class="header">
-            <button class="menu-toggle" id="menuToggle" aria-label="メニュー">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
-            <h1 class="header-title">
-                <span class="header-icon">📊</span>
-                プロジェクト管理
-            </h1>
-            <div class="header-actions">
+            <div class="header-left">
+                <div class="header-logo">
+                    <span class="logo-icon">🔳</span>
+                    <span class="logo-text">Plan</span>
+                </div>
+            </div>
+
+            <nav class="header-nav">
+                <button class="nav-item active" data-view="gantt" id="viewGantt">📊 ガント</button>
+                <button class="nav-item" data-view="calendar" id="viewCalendar">🗓️ 月間</button>
+                <button class="nav-item" data-view="weekly" id="viewWeekly">📆 週間</button>
+                <button class="nav-item" data-view="daily" id="viewDaily">📅 日間</button>
+                <button class="nav-item" data-view="list" id="viewList">📋 リスト</button>
+            </nav>
+
+            <div class="header-right">
                 <div class="sync-status" id="syncStatus" title="同期状態">
                     <span class="sync-icon">●</span>
                     <span class="sync-text">ローカル</span>
                 </div>
-                <button class="btn-icon" id="searchBtn" aria-label="検索">
-                    🔍
+                <button class="btn-icon" id="searchBtn">🔍</button>
+                <button class="btn-create" id="addProjectBtn">
+                    <span>+</span> Create
                 </button>
-                <button class="btn-icon" id="userBtn" aria-label="ユーザー">
-                    👤
-                </button>
+                <div class="user-profile">
+                    <img src="https://ui-avatars.com/api/?name=User&background=4F46E5&color=fff" alt="User">
+                </div>
             </div>
         </header>
 
@@ -59,119 +66,65 @@
         <div class="main-wrapper">
             <!-- Sidebar -->
             <aside class="sidebar" id="sidebar">
+                <!-- Mini Calendar Section -->
+                <div class="sidebar-section mini-calendar-section">
+                    <div id="miniCalendar"></div>
+                </div>
+
                 <div class="sidebar-section">
-                    <h2 class="sidebar-title">カテゴリ</h2>
+                    <div class="section-header">
+                        <h2 class="sidebar-title">Categories</h2>
+                        <button class="btn-add-mini" id="addCategoryBtn">+</button>
+                    </div>
                     <ul class="category-list" id="categoryList">
-                        <li class="category-item active" data-category="all">
-                            <span class="category-icon">📁</span>
-                            <span class="category-name">すべて</span>
-                            <span class="category-count" id="countAll">0</span>
+                        <!-- Categories will be rendered here -->
+                    </ul>
+                </div>
+
+                <div class="sidebar-section">
+                    <h2 class="sidebar-title">Prioritize</h2>
+                    <ul class="prioritize-list">
+                        <li class="prioritize-item">
+                            <span class="icon">⭕</span> Eisenhower Matrix
+                        </li>
+                        <li class="prioritize-item">
+                            <span class="icon">⭕</span> Eat The Frog First
                         </li>
                     </ul>
-                    <button class="btn-add-category" id="addCategoryBtn">
-                        <span>+</span> カテゴリを追加
-                    </button>
-                </div>
-
-                <div class="sidebar-section">
-                    <h2 class="sidebar-title">フィルター</h2>
-                    <div class="filter-group">
-                        <label class="filter-label">ステータス</label>
-                        <select class="filter-select" id="filterStatus">
-                            <option value="all">すべて</option>
-                            <option value="todo">未着手</option>
-                            <option value="in-progress">進行中</option>
-                            <option value="done">完了</option>
-                            <option value="on-hold">保留</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label class="filter-label">優先度</label>
-                        <select class="filter-select" id="filterPriority">
-                            <option value="all">すべて</option>
-                            <option value="high">高</option>
-                            <option value="medium">中</option>
-                            <option value="low">低</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- ToDo Section -->
-                <div class="sidebar-section todo-section">
-                    <div class="todo-header">
-                        <span class="todo-section-title">✅ ToDo</span>
-                        <button class="btn-add-todo" id="addTodoBtn" title="追加">+</button>
-                    </div>
-                    <div class="todo-filters">
-                        <button class="todo-filter-btn active" data-filter="all">すべて</button>
-                        <button class="todo-filter-btn" data-filter="today">今日</button>
-                        <button class="todo-filter-btn" data-filter="week">今週</button>
-                        <button class="todo-filter-btn" data-filter="active">未完了</button>
-                    </div>
-                    <div class="todo-list" id="todoList"></div>
                 </div>
 
                 <!-- Google Calendar Quick Add -->
-                <div class="sidebar-section google-calendar-section">
+                <div class="sidebar-section">
                     <button class="btn-calendar-add" id="sidebarAddEvent">
                         📅 予定を追加
                     </button>
                 </div>
 
                 <div class="sidebar-section sidebar-bottom">
-                    <button class="btn-secondary" id="exportBtn">
-                        📤 エクスポート
-                    </button>
-                    <button class="btn-secondary" id="importBtn">
-                        📥 インポート
-                    </button>
+                    <div class="sidebar-links">
+                        <button class="link-btn" id="exportBtn">エクスポート</button>
+                        <button class="link-btn" id="importBtn">インポート</button>
+                    </div>
                     <input type="file" id="importFile" accept=".json" hidden>
-                    <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
-                    <button class="btn-secondary" id="connectTodoist">
-                        🔗 Todoist連携
-                    </button>
-                    <button class="btn-secondary hidden" id="syncTodoist">
-                        🔄 Todoist同期
-                    </button>
-                    <button class="btn-secondary hidden" id="disconnectTodoist">
-                        ✕ Todoist解除
-                    </button>
-                    <button class="btn-secondary" id="connectNotion">
-                        📝 Notion連携
-                    </button>
-                    <button class="btn-secondary hidden" id="syncNotion">
-                        🔄 Notion同期
-                    </button>
-                    <button class="btn-secondary hidden" id="disconnectNotion">
-                        ✕ Notion解除
-                    </button>
+                    <div class="integration-links">
+                        <button class="link-btn" id="connectTodoist">Todoist連携</button>
+                        <button class="link-btn" id="connectNotion">Notion連携</button>
+                    </div>
                 </div>
             </aside>
 
             <!-- Main Area -->
             <main class="main-content">
-                <!-- View Toggle -->
-                <div class="view-controls">
-                    <div class="view-toggle">
-                        <button class="view-btn active" data-view="gantt" id="viewGantt">
-                            📊 ガント
-                        </button>
-                        <button class="view-btn" data-view="calendar" id="viewCalendar">
-                            🗓️ 月間
-                        </button>
-                        <button class="view-btn" data-view="weekly" id="viewWeekly">
-                            📆 週間
-                        </button>
-                        <button class="view-btn" data-view="daily" id="viewDaily">
-                            📅 日間
-                        </button>
-                        <button class="view-btn" data-view="list" id="viewList">
-                            📋 リスト
-                        </button>
+                <!-- View Header (Dynamically updated title/range) -->
+                <div class="view-header">
+                    <div class="view-title-container">
+                        <div class="view-nav-arrows">
+                            <button id="prevBtn" class="nav-arrow">＜</button>
+                            <button id="nextBtn" class="nav-arrow">＞</button>
+                        </div>
+                        <h2 id="viewTitle" class="view-title">April 13 - 19, 2026</h2>
+                        <span id="viewWeekNum" class="week-badge">Week 16</span>
                     </div>
-                    <button class="btn-primary" id="addProjectBtn">
-                        <span>+</span> プロジェクト追加
-                    </button>
                 </div>
 
                 <!-- Gantt Chart View -->

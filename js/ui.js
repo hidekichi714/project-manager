@@ -18,37 +18,35 @@ const UI = {
     cacheElements() {
         this.elements = {
             // Header
-            menuToggle: document.getElementById('menuToggle'),
+            header: document.querySelector('.header'),
+            logo: document.querySelector('.header-logo'),
             searchBtn: document.getElementById('searchBtn'),
-            userBtn: document.getElementById('userBtn'),
             syncStatus: document.getElementById('syncStatus'),
+            addProjectBtn: document.getElementById('addProjectBtn'),
 
             // Sidebar
             sidebar: document.getElementById('sidebar'),
             categoryList: document.getElementById('categoryList'),
             addCategoryBtn: document.getElementById('addCategoryBtn'),
-            filterStatus: document.getElementById('filterStatus'),
-            filterPriority: document.getElementById('filterPriority'),
             exportBtn: document.getElementById('exportBtn'),
             importBtn: document.getElementById('importBtn'),
             importFile: document.getElementById('importFile'),
 
-            // Main
-            addProjectBtn: document.getElementById('addProjectBtn'),
-            viewGantt: document.getElementById('viewGantt'),
-            viewCalendar: document.getElementById('viewCalendar'),
-            viewList: document.getElementById('viewList'),
+            // Navigation
+            navItems: document.querySelectorAll('.nav-item'),
+
+            // Views
             ganttView: document.getElementById('ganttView'),
             calendarView: document.getElementById('calendarView'),
+            weeklyView: document.getElementById('weeklyView'),
+            dailyView: document.getElementById('dailyView'),
             listView: document.getElementById('listView'),
-            projectList: document.getElementById('projectList'),
-            ganttContainer: document.getElementById('ganttContainer'),
 
-            // Gantt controls
-            ganttPrev: document.getElementById('ganttPrev'),
-            ganttNext: document.getElementById('ganttNext'),
-            ganttPeriod: document.getElementById('ganttPeriod'),
-            ganttScale: document.getElementById('ganttScale'),
+            // View Header (Date display)
+            viewTitle: document.getElementById('viewTitle'),
+            viewWeekNum: document.getElementById('viewWeekNum'),
+            prevBtn: document.getElementById('prevBtn'),
+            nextBtn: document.getElementById('nextBtn'),
 
             // Project Modal
             projectModal: document.getElementById('projectModal'),
@@ -100,17 +98,9 @@ const UI = {
             // User Modal
             userModal: document.getElementById('userModal'),
             userModalClose: document.getElementById('userModalClose'),
-            googleLoginBtn: document.getElementById('googleLoginBtn'),
-            userNotLoggedIn: document.getElementById('userNotLoggedIn'),
-            userLoggedIn: document.getElementById('userLoggedIn'),
-            userAvatar: document.getElementById('userAvatar'),
             userName: document.getElementById('userName'),
             userEmail: document.getElementById('userEmail'),
-            syncNowBtn: document.getElementById('syncNowBtn'),
-            logoutBtn: document.getElementById('logoutBtn'),
-
-            // Toast
-            toastContainer: document.getElementById('toastContainer')
+            logoutBtn: document.getElementById('logoutBtn')
         };
     },
 
@@ -118,15 +108,21 @@ const UI = {
     bindEvents() {
         const { elements } = this;
 
-        // Menu toggle (mobile)
-        elements.menuToggle?.addEventListener('click', () => this.toggleSidebar());
+        // Navigation (Header Tabs)
+        elements.navItems?.forEach(item => {
+            item.addEventListener('click', () => {
+                const view = item.dataset.view;
+                this.switchView(view);
 
-        // View toggle
-        elements.viewGantt?.addEventListener('click', () => this.switchView('gantt'));
-        elements.viewCalendar?.addEventListener('click', () => this.switchView('calendar'));
-        elements.viewList?.addEventListener('click', () => this.switchView('list'));
-        document.getElementById('viewWeekly')?.addEventListener('click', () => this.switchView('weekly'));
-        document.getElementById('viewDaily')?.addEventListener('click', () => this.switchView('daily'));
+                // Update active state in UI
+                elements.navItems.forEach(nav => nav.classList.remove('active'));
+                item.classList.add('active');
+            });
+        });
+
+        // Common Nav Arrows (Date navigation)
+        elements.prevBtn?.addEventListener('click', () => this.navigateDate(-1));
+        elements.nextBtn?.addEventListener('click', () => this.navigateDate(1));
 
         // Project modal
         elements.addProjectBtn?.addEventListener('click', () => this.openProjectModal());
@@ -154,9 +150,10 @@ const UI = {
         elements.searchModalClose?.addEventListener('click', () => this.closeModal(elements.searchModal));
         elements.searchInput?.addEventListener('input', (e) => this.handleSearch(e.target.value));
 
-        // User modal
-        elements.userBtn?.addEventListener('click', () => this.openModal(elements.userModal));
-        elements.userModalClose?.addEventListener('click', () => this.closeModal(elements.userModal));
+        // User profile (placeholder behavior)
+        document.querySelector('.user-profile')?.addEventListener('click', () => {
+            UI.showToast('ユーザー設定は準備中です', 'info');
+        });
 
         // Export/Import
         elements.exportBtn?.addEventListener('click', () => ExportModule.exportToJson());
@@ -172,21 +169,19 @@ const UI = {
             }
         });
 
-        // Filters
-        elements.filterStatus?.addEventListener('change', () => this.applyFilters());
-        elements.filterPriority?.addEventListener('change', () => this.applyFilters());
-
-        // Gantt controls
-        elements.ganttPrev?.addEventListener('click', () => Gantt.navigate(-1));
-        elements.ganttNext?.addEventListener('click', () => Gantt.navigate(1));
-        elements.ganttScale?.addEventListener('change', (e) => Gantt.setScale(e.target.value));
-
         // Modal backdrop click
         document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
             backdrop.addEventListener('click', () => {
                 const modal = backdrop.closest('.modal');
                 this.closeModal(modal);
             });
+        });
+
+        // Google Calendar Quick Add
+        document.getElementById('sidebarAddEvent')?.addEventListener('click', () => {
+            if (typeof GoogleCalendar !== 'undefined') {
+                GoogleCalendar.openEventModal();
+            }
         });
 
         // Category click
@@ -197,6 +192,30 @@ const UI = {
             }
         });
     },
+
+    // Date navigation common handler
+    navigateDate(direction) {
+        const activeView = this.getActiveView();
+
+        if (activeView === 'gantt' && typeof Gantt !== 'undefined') {
+            Gantt.navigate(direction);
+        } else if (activeView === 'calendar' && typeof Calendar !== 'undefined') {
+            Calendar.navigate(direction);
+        } else if ((activeView === 'weekly' || activeView === 'daily') && typeof WeeklyView !== 'undefined') {
+            WeeklyView.navigate(direction);
+        }
+    },
+
+    // Get current active view
+    getActiveView() {
+        if (!this.elements.ganttView.classList.contains('hidden')) return 'gantt';
+        if (!this.elements.calendarView.classList.contains('hidden')) return 'calendar';
+        if (!this.elements.weeklyView.classList.contains('hidden')) return 'weekly';
+        if (!this.elements.dailyView.classList.contains('hidden')) return 'daily';
+        if (!this.elements.listView.classList.contains('hidden')) return 'list';
+        return 'gantt';
+    },
+
 
     // サイドバートグル
     toggleSidebar() {
