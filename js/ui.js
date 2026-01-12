@@ -641,11 +641,13 @@ const UI = {
     renderTaskItem(task) {
         const statusLabels = { 'todo': '未着手', 'in-progress': '進行中', 'done': '完了', 'on-hold': '保留' };
         const priorityLabels = { 'high': '高', 'medium': '中', 'low': '低' };
+        const isDone = task.status === 'done';
 
         return `
             <div class="task-item" data-id="${task.id}" data-project-id="${task.projectId}">
+                <input type="checkbox" class="task-checkbox" ${isDone ? 'checked' : ''} data-task-id="${task.id}">
                 <span class="gantt-task-status ${task.status}"></span>
-                <span class="task-item-name">${this.escapeHtml(task.name)}</span>
+                <span class="task-item-name ${isDone ? 'completed' : ''}">${this.escapeHtml(task.name)}</span>
                 <span class="gantt-task-priority ${task.priority}">${priorityLabels[task.priority]}</span>
             </div>
         `;
@@ -687,9 +689,29 @@ const UI = {
 
         // タスク編集
         document.querySelectorAll('.task-item').forEach(item => {
-            item.addEventListener('click', () => {
+            item.addEventListener('click', (e) => {
+                // チェックボックスクリック時はスキップ
+                if (e.target.classList.contains('task-checkbox')) return;
+
                 const task = Storage.getTask(item.dataset.id);
                 if (task) this.openTaskModal(task.projectId, task);
+            });
+        });
+
+        // タスク完了チェックボックス（リストビュー）
+        document.querySelectorAll('.task-item .task-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                e.stopPropagation();
+                const taskId = checkbox.dataset.taskId;
+                const task = Storage.getTask(taskId);
+                if (task) {
+                    task.status = checkbox.checked ? 'done' : 'todo';
+                    task.progress = checkbox.checked ? 100 : 0;
+                    Storage.saveTask(task);
+                    this.showToast(checkbox.checked ? 'タスクを完了しました' : 'タスクを未完了に戻しました', 'success');
+                    Gantt.render();
+                    this.renderProjectList();
+                }
             });
         });
     },

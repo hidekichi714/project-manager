@@ -279,6 +279,61 @@
     transform: translateY(-2px);
 }
 
+/* Calendar Selector */
+.calendar-selector-container {
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--border-color);
+}
+
+.calendar-selector-title {
+    margin: 0 0 var(--spacing-md) 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+.calendar-selector {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.calendar-selector-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.calendar-selector-item:hover {
+    background: var(--color-bg-secondary);
+}
+
+.calendar-selector-item input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--cal-color, var(--color-accent-primary));
+    cursor: pointer;
+}
+
+.calendar-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.calendar-name {
+    font-size: 0.85rem;
+    color: var(--color-text-primary);
+}
+
 /* Mobile Calendar */
 @media (max-width: 768px) {
     .calendar-day {

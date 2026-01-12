@@ -163,8 +163,11 @@ const Calendar = {
                 `;
             } else {
                 const title = event.summary || '(タイトルなし)';
+                const color = event.calendarColor || '#4285f4';
                 return `
-                    <div class="calendar-event google" title="${UI.escapeHtml(title)}">
+                    <div class="calendar-event google" 
+                         style="background: ${color}20; border-left-color: ${color};"
+                         title="${event.calendarName}: ${UI.escapeHtml(title)}">
                         ${UI.escapeHtml(title)}
                     </div>
                 `;

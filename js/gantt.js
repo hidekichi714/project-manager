@@ -185,10 +185,12 @@ const Gantt = {
             if (!isCollapsed) {
                 filteredTasks.forEach(task => {
                     const priorityLabels = { 'high': '高', 'medium': '中', 'low': '低' };
+                    const isDone = task.status === 'done';
                     html += `
                         <div class="gantt-task-row" data-task-id="${task.id}" data-project-id="${task.projectId}">
+                            <input type="checkbox" class="task-checkbox" ${isDone ? 'checked' : ''} data-task-id="${task.id}">
                             <span class="gantt-task-status ${task.status}"></span>
-                            <span class="gantt-task-name">${UI.escapeHtml(task.name)}</span>
+                            <span class="gantt-task-name ${isDone ? 'completed' : ''}">${UI.escapeHtml(task.name)}</span>
                             <span class="gantt-task-priority ${task.priority}">${priorityLabels[task.priority]}</span>
                         </div>
                     `;
@@ -339,9 +341,29 @@ const Gantt = {
 
         // タスク行クリック
         document.querySelectorAll('.gantt-task-row').forEach(row => {
-            row.addEventListener('click', () => {
+            row.addEventListener('click', (e) => {
+                // チェックボックスクリック時はスキップ
+                if (e.target.classList.contains('task-checkbox')) return;
+
                 const task = Storage.getTask(row.dataset.taskId);
                 if (task) UI.openTaskModal(task.projectId, task);
+            });
+        });
+
+        // タスク完了チェックボックス
+        document.querySelectorAll('.gantt-task-row .task-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                e.stopPropagation();
+                const taskId = checkbox.dataset.taskId;
+                const task = Storage.getTask(taskId);
+                if (task) {
+                    task.status = checkbox.checked ? 'done' : 'todo';
+                    task.progress = checkbox.checked ? 100 : 0;
+                    Storage.saveTask(task);
+                    UI.showToast(checkbox.checked ? 'タスクを完了しました' : 'タスクを未完了に戻しました', 'success');
+                    this.render();
+                    UI.renderProjectList();
+                }
             });
         });
 

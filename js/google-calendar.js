@@ -7,12 +7,14 @@ const GoogleCalendar = {
     API_KEY: 'AIzaSyD9NRHbJpngxYvOxVhBlBkdgsunCZHooXs',
     CLIENT_ID: '170943366688-nchj26gtkncu6s3t9rp4hn15hea45ssh.apps.googleusercontent.com',
     DISCOVERY_DOC: 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
-    SCOPES: 'https://www.googleapis.com/auth/calendar.events',
+    SCOPES: 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly',
 
     // 状態
     initialized: false,
     connected: false,
     events: [],
+    calendars: [],
+    selectedCalendars: new Set(),
     tokenClient: null,
 
     // 初期化
@@ -133,28 +135,105 @@ const GoogleCalendar = {
         if (!this.connected) return;
 
         try {
+            // カレンダー一覧を取得
+            await this.fetchCalendars();
+
             const now = new Date();
             const timeMin = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
             const timeMax = new Date(now.getFullYear(), now.getMonth() + 2, 0).toISOString();
 
-            const response = await gapi.client.calendar.events.list({
-                calendarId: 'primary',
-                timeMin: timeMin,
-                timeMax: timeMax,
-                showDeleted: false,
-                singleEvents: true,
-                maxResults: 100,
-                orderBy: 'startTime',
-            });
+            // 選択されたカレンダーからイベントを取得
+            this.events = [];
+            const calendarsToFetch = this.selectedCalendars.size > 0
+                ? [...this.selectedCalendars]
+                : this.calendars.map(c => c.id);
 
-            this.events = response.result.items || [];
+            for (const calendarId of calendarsToFetch) {
+                try {
+                    const response = await gapi.client.calendar.events.list({
+                        calendarId: calendarId,
+                        timeMin: timeMin,
+                        timeMax: timeMax,
+                        showDeleted: false,
+                        singleEvents: true,
+                        maxResults: 50,
+                        orderBy: 'startTime',
+                    });
+
+                    const calendarInfo = this.calendars.find(c => c.id === calendarId);
+                    const eventsWithCalendar = (response.result.items || []).map(event => ({
+                        ...event,
+                        calendarId: calendarId,
+                        calendarName: calendarInfo?.summary || 'カレンダー',
+                        calendarColor: calendarInfo?.backgroundColor || '#4285f4'
+                    }));
+                    this.events.push(...eventsWithCalendar);
+                } catch (err) {
+                    console.warn(`カレンダー ${calendarId} の取得に失敗:`, err);
+                }
+            }
+
             console.log(`Google Calendar: ${this.events.length}件のイベントを取得`);
+            this.updateCalendarSelector();
             Calendar.render();
             UI.showToast('Googleカレンダーを同期しました', 'success');
         } catch (error) {
             console.error('イベント取得エラー:', error);
             UI.showToast('カレンダーの取得に失敗しました', 'error');
         }
+    },
+
+    // カレンダー一覧取得
+    async fetchCalendars() {
+        try {
+            const response = await gapi.client.calendar.calendarList.list();
+            this.calendars = response.result.items || [];
+
+            // 初回は全カレンダーを選択
+            if (this.selectedCalendars.size === 0) {
+                this.calendars.forEach(c => this.selectedCalendars.add(c.id));
+            }
+
+            console.log(`Google Calendar: ${this.calendars.length}件のカレンダーを取得`);
+        } catch (error) {
+            console.error('カレンダー一覧取得エラー:', error);
+        }
+    },
+
+    // カレンダー選択をトグル
+    toggleCalendar(calendarId) {
+        if (this.selectedCalendars.has(calendarId)) {
+            this.selectedCalendars.delete(calendarId);
+        } else {
+            this.selectedCalendars.add(calendarId);
+        }
+        this.fetchEvents();
+    },
+
+    // カレンダー選択UI更新
+    updateCalendarSelector() {
+        const container = document.getElementById('calendarSelector');
+        if (!container) return;
+
+        let html = '';
+        this.calendars.forEach(cal => {
+            const isSelected = this.selectedCalendars.has(cal.id);
+            html += `
+                <label class="calendar-selector-item" style="--cal-color: ${cal.backgroundColor}">
+                    <input type="checkbox" ${isSelected ? 'checked' : ''} data-calendar-id="${cal.id}">
+                    <span class="calendar-dot" style="background: ${cal.backgroundColor}"></span>
+                    <span class="calendar-name">${cal.summary}</span>
+                </label>
+            `;
+        });
+        container.innerHTML = html;
+
+        // イベントバインド
+        container.querySelectorAll('input').forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                this.toggleCalendar(checkbox.dataset.calendarId);
+            });
+        });
     },
 
     // イベント一覧を取得
@@ -203,6 +282,9 @@ Google Calendar API のセットアップが必要です：
             }
             if (connectBtn) connectBtn.classList.add('hidden');
             if (disconnectBtn) disconnectBtn.classList.remove('hidden');
+            // カレンダーセレクター表示
+            const selectorContainer = document.getElementById('calendarSelectorContainer');
+            if (selectorContainer) selectorContainer.classList.remove('hidden');
         } else {
             if (status) {
                 status.textContent = '未接続';
@@ -213,6 +295,9 @@ Google Calendar API のセットアップが必要です：
                 connectBtn.onclick = () => this.connect();
             }
             if (disconnectBtn) disconnectBtn.classList.add('hidden');
+            // カレンダーセレクター非表示
+            const selectorContainer = document.getElementById('calendarSelectorContainer');
+            if (selectorContainer) selectorContainer.classList.add('hidden');
         }
     },
 

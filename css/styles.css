@@ -821,6 +821,74 @@ form {
     margin-left: auto;
 }
 
+/* Voice Input */
+.voice-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.voice-input-wrapper input {
+    padding-right: 44px;
+}
+
+.voice-btn {
+    position: absolute;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    transition: all var(--transition-fast);
+    cursor: pointer;
+}
+
+.voice-btn:hover {
+    background: var(--color-accent-primary);
+}
+
+.voice-btn.listening {
+    background: var(--color-danger);
+    animation: pulse-voice 1s infinite;
+}
+
+@keyframes pulse-voice {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+/* Task Completion Checkbox */
+.task-checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-success);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.task-checkbox:checked+.task-item-name,
+.task-checkbox:checked+.gantt-task-name {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.task-item-name.completed,
+.gantt-task-name.completed {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
 /* ===================================
    Search
    =================================== */
