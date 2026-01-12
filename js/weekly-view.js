@@ -269,9 +269,10 @@ const WeeklyView = {
                 html += this.renderTaskBlock(task, startHour, slotHeight);
             });
 
-            // Googleイベントをオーバーレイ
-            dayEvents.forEach(event => {
-                html += this.renderGoogleEventBlock(event, startHour, slotHeight);
+            // Googleイベントをオーバーレイ（衝突検出付き）
+            const eventsWithPosition = this.calculateEventPositions(dayEvents, startHour, slotHeight);
+            eventsWithPosition.forEach(eventData => {
+                html += this.renderGoogleEventBlockWithPosition(eventData, startHour, slotHeight);
             });
 
             html += '</div>';
@@ -336,9 +337,86 @@ const WeeklyView = {
                  data-all-day="false"
                  style="top: ${top}px; height: ${height}px; background: ${event.calendarColor || '#4285f4'}30; border-left-color: ${event.calendarColor || '#4285f4'};">
                 <div class="event-resize-handle event-resize-top"></div>
-                <span class="event-time">${this.formatTime(startTime)}${isDaily ? ' - ' + this.formatTime(endTime) : ''}</span>
                 <span class="event-title">${UI.escapeHtml(event.summary || '(タイトルなし)')}</span>
                 <div class="event-resize-handle event-resize-bottom"></div>
+            </div>
+        `;
+    },
+
+    // イベント衝突検出と位置計算
+    calculateEventPositions(events, startHour, slotHeight) {
+        if (!events.length) return [];
+
+        // イベントを開始時間でソート
+        const sorted = events.map(e => {
+            const start = new Date(e.start.dateTime);
+            const end = new Date(e.end.dateTime);
+            return {
+                event: e,
+                startMinutes: (start.getHours() - startHour) * 60 + start.getMinutes(),
+                endMinutes: (end.getHours() - startHour) * 60 + end.getMinutes()
+            };
+        }).sort((a, b) => a.startMinutes - b.startMinutes);
+
+        // 衝突グループを計算
+        const groups = [];
+        let currentGroup = [sorted[0]];
+        let groupEnd = sorted[0].endMinutes;
+
+        for (let i = 1; i < sorted.length; i++) {
+            if (sorted[i].startMinutes < groupEnd) {
+                // 重なっている
+                currentGroup.push(sorted[i]);
+                groupEnd = Math.max(groupEnd, sorted[i].endMinutes);
+            } else {
+                // 新しいグループ
+                groups.push(currentGroup);
+                currentGroup = [sorted[i]];
+                groupEnd = sorted[i].endMinutes;
+            }
+        }
+        groups.push(currentGroup);
+
+        // 各イベントに位置情報を付与
+        const result = [];
+        groups.forEach(group => {
+            const count = group.length;
+            group.forEach((item, index) => {
+                result.push({
+                    ...item,
+                    left: (index / count) * 100,
+                    width: 100 / count
+                });
+            });
+        });
+
+        return result;
+    },
+
+    // 位置情報付きイベントブロック描画
+    renderGoogleEventBlockWithPosition(eventData, startHour, slotHeight) {
+        const { event, startMinutes, left, width } = eventData;
+        const eventId = event.id;
+        const calendarId = event.calendarId || 'primary';
+
+        const startTime = new Date(event.start.dateTime);
+        const endTime = new Date(event.end.dateTime);
+        const duration = (endTime - startTime) / (1000 * 60);
+
+        const top = (startMinutes / 60) * slotHeight;
+        const height = Math.max((duration / 60) * slotHeight, 24);
+
+        if (top < 0) return '';
+
+        return `
+            <div class="weekly-event google draggable-event" 
+                 draggable="true"
+                 data-event-id="${eventId}"
+                 data-calendar-id="${calendarId}"
+                 data-duration="${duration}"
+                 data-all-day="false"
+                 style="top: ${top}px; height: ${height}px; left: calc(4px + ${left}%); width: calc(${width}% - 8px); background: ${event.calendarColor || '#4285f4'}30; border-left-color: ${event.calendarColor || '#4285f4'};">
+                <span class="event-title">${UI.escapeHtml(event.summary || '(タイトルなし)')}</span>
             </div>
         `;
     },
@@ -439,17 +517,30 @@ const WeeklyView = {
                 const calendarId = el.dataset.calendarId || 'primary';
                 const eventTitle = el.querySelector('.event-title')?.textContent || '予定';
 
-                // 確認ダイアログ
-                if (confirm(`「${eventTitle}」を削除しますか？`)) {
+                // 選択ダイアログ
+                const action = prompt(
+                    `「${eventTitle}」\n\n操作を選択してください:\n1 = 編集\n2 = 削除\nキャンセル = 何もしない`,
+                    '1'
+                );
+
+                if (action === '1') {
+                    // 編集モーダルを開く
                     if (typeof GoogleCalendar !== 'undefined') {
-                        GoogleCalendar.deleteEvent(eventId, calendarId).then(() => {
-                            const activeView = document.querySelector('.view-container:not(.hidden)')?.id;
-                            if (activeView === 'weeklyView') {
-                                this.renderWeekly();
-                            } else if (activeView === 'dailyView') {
-                                this.renderDaily();
-                            }
-                        });
+                        GoogleCalendar.openEditEventModal(eventId, calendarId);
+                    }
+                } else if (action === '2') {
+                    // 削除
+                    if (confirm('本当に削除しますか？')) {
+                        if (typeof GoogleCalendar !== 'undefined') {
+                            GoogleCalendar.deleteEvent(eventId, calendarId).then(() => {
+                                const activeView = document.querySelector('.view-container:not(.hidden)')?.id;
+                                if (activeView === 'weeklyView') {
+                                    this.renderWeekly();
+                                } else if (activeView === 'dailyView') {
+                                    this.renderDaily();
+                                }
+                            });
+                        }
                     }
                 }
             });
@@ -754,9 +845,16 @@ const WeeklyView = {
         return `${date.getMonth() + 1}/${date.getDate()}`;
     },
 
-    formatTime(minutes) {
-        const h = Math.floor(minutes / 60);
-        const m = minutes % 60;
+    formatTime(input) {
+        // Dateオブジェクトの場合
+        if (input instanceof Date) {
+            const h = input.getHours();
+            const m = input.getMinutes();
+            return `${h}:${m.toString().padStart(2, '0')}`;
+        }
+        // 数値（分）の場合
+        const h = Math.floor(input / 60);
+        const m = input % 60;
         return `${h}:${m.toString().padStart(2, '0')}`;
     },
 

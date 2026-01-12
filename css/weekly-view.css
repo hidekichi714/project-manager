@@ -202,12 +202,23 @@
 .daily-event .event-title {
     font-weight: 600;
     color: var(--color-text-primary);
+    font-size: clamp(0.6rem, 1.5vw, 0.8rem);
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
 }
 
-.weekly-event .event-time,
-.daily-event .event-time {
-    font-size: 0.7rem;
-    color: var(--color-text-muted);
+/* Short events - single line */
+.weekly-event[style*="height: 24px"] .event-title,
+.weekly-event[style*="height: 25px"] .event-title,
+.weekly-event[style*="height: 26px"] .event-title {
+    font-size: 0.65rem;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
 }
 
 .weekly-event.all-day {

@@ -176,6 +176,15 @@ const GoogleCalendar = {
             console.log(`Google Calendar: ${this.events.length}件のイベントを取得`);
             this.updateCalendarSelector();
             Calendar.render();
+
+            // アクティブなビューも更新
+            const activeView = document.querySelector('.view-container:not(.hidden)')?.id;
+            if (activeView === 'weeklyView' && typeof WeeklyView !== 'undefined') {
+                WeeklyView.renderWeekly();
+            } else if (activeView === 'dailyView' && typeof WeeklyView !== 'undefined') {
+                WeeklyView.renderDaily();
+            }
+
             UI.showToast('Googleカレンダーを同期しました', 'success');
         } catch (error) {
             console.error('イベント取得エラー:', error);
@@ -317,6 +326,98 @@ Google Calendar API のセットアップが必要です：
         // カレンダービュー再描画
         if (typeof Calendar !== 'undefined') {
             Calendar.render();
+        }
+    },
+
+    // 編集モーダルを開く
+    async openEditEventModal(eventId, calendarId = 'primary') {
+        if (!this.connected) {
+            UI.showToast('Googleカレンダーに接続してください', 'warning');
+            return;
+        }
+
+        try {
+            // イベント詳細を取得
+            const response = await gapi.client.calendar.events.get({
+                calendarId: calendarId,
+                eventId: eventId
+            });
+            const event = response.result;
+
+            // モーダルを開いてデータを入力
+            const modal = document.getElementById('googleEventModal');
+            if (!modal) return;
+
+            // 編集モード用にフォームを設定
+            document.getElementById('googleEventTitle').value = event.summary || '';
+
+            const isAllDay = !event.start.dateTime;
+            document.getElementById('googleEventAllDay').checked = isAllDay;
+
+            if (isAllDay) {
+                document.getElementById('googleEventStartDate').value = event.start.date || '';
+                document.getElementById('googleEventEndDate').value = event.end.date || '';
+                document.getElementById('googleEventDateRow').classList.remove('hidden');
+                document.getElementById('googleEventTimeRow').classList.add('hidden');
+            } else {
+                const startDT = new Date(event.start.dateTime);
+                const endDT = new Date(event.end.dateTime);
+                document.getElementById('googleEventStartTime').value = startDT.toISOString().slice(0, 16);
+                document.getElementById('googleEventEndTime').value = endDT.toISOString().slice(0, 16);
+                document.getElementById('googleEventDateRow').classList.add('hidden');
+                document.getElementById('googleEventTimeRow').classList.remove('hidden');
+            }
+
+            // 編集モードフラグとイベントIDを保存
+            modal.dataset.editMode = 'true';
+            modal.dataset.eventId = eventId;
+            modal.dataset.calendarId = calendarId;
+
+            // モーダルタイトル変更
+            const modalTitle = modal.querySelector('.modal-title');
+            if (modalTitle) modalTitle.textContent = '📝 予定を編集';
+
+            modal.classList.add('active');
+        } catch (error) {
+            console.error('イベント取得エラー:', error);
+            UI.showToast('イベントの取得に失敗しました', 'error');
+        }
+    },
+
+    // イベント詳細を更新
+    async updateEventDetails(eventId, calendarId, eventData) {
+        if (!this.connected) {
+            UI.showToast('Googleカレンダーに接続してください', 'warning');
+            return null;
+        }
+
+        try {
+            let update = {
+                summary: eventData.title
+            };
+
+            if (eventData.allDay) {
+                update.start = { date: eventData.startDate };
+                update.end = { date: eventData.endDate || this.addDays(eventData.startDate, 1) };
+            } else {
+                update.start = { dateTime: this.toISODateTime(eventData.startTime), timeZone: 'Asia/Tokyo' };
+                update.end = { dateTime: eventData.endTime ? this.toISODateTime(eventData.endTime) : this.addHours(this.toISODateTime(eventData.startTime), 1), timeZone: 'Asia/Tokyo' };
+            }
+
+            const response = await gapi.client.calendar.events.patch({
+                calendarId: calendarId,
+                eventId: eventId,
+                resource: update,
+            });
+
+            console.log('イベント更新成功:', response.result);
+            UI.showToast('予定を更新しました', 'success');
+            this.fetchEvents();
+            return response.result;
+        } catch (error) {
+            console.error('イベント更新エラー:', error);
+            UI.showToast('予定の更新に失敗しました', 'error');
+            return null;
         }
     },
 
