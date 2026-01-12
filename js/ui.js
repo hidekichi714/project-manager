@@ -216,6 +216,22 @@ const UI = {
                 this.selectCategory(item.dataset.category);
             }
         });
+
+        // Quick Add Form
+        document.getElementById('quickAddForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const input = document.getElementById('quickAddInput');
+            const text = input?.value?.trim();
+            if (text && typeof ToDo !== 'undefined') {
+                ToDo.add({ text: text, dueDate: new Date().toISOString().split('T')[0] });
+                input.value = '';
+                this.renderDueTasks();
+                this.showToast('タスクを追加しました', 'success');
+            }
+        });
+
+        // Initial render of due tasks
+        this.renderDueTasks();
     },
 
     // Date navigation common handler
@@ -856,5 +872,74 @@ const UI = {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    },
+
+    // 今日までの締切タスクを表示
+    renderDueTasks() {
+        const container = document.getElementById('dueTasks');
+        if (!container) return;
+
+        const today = new Date().toISOString().split('T')[0];
+        let dueTasks = [];
+
+        // ToDoから取得
+        if (typeof ToDo !== 'undefined') {
+            const todos = ToDo.getAll?.() || JSON.parse(localStorage.getItem('todos') || '[]');
+            dueTasks = dueTasks.concat(
+                todos.filter(t => !t.completed && t.dueDate && t.dueDate <= today)
+                    .map(t => ({ ...t, type: 'todo' }))
+            );
+        }
+
+        // プロジェクトのサブタスクから取得
+        if (typeof Storage !== 'undefined') {
+            const projects = Storage.getProjects?.() || [];
+            projects.forEach(project => {
+                const tasks = Storage.getTasks?.(project.id) || [];
+                tasks.forEach(task => {
+                    if (task.endDate && task.endDate <= today && task.progress < 100) {
+                        dueTasks.push({ ...task, type: 'subtask', projectName: project.name });
+                    }
+                });
+            });
+        }
+
+        if (dueTasks.length === 0) {
+            container.innerHTML = '<div class="due-task-empty">締切タスクはありません 🎉</div>';
+            return;
+        }
+
+        let html = '';
+        dueTasks.slice(0, 10).forEach(task => {
+            const isOverdue = task.dueDate < today || task.endDate < today;
+            html += `
+                <div class="due-task-item ${isOverdue ? 'overdue' : ''}" data-type="${task.type}" data-id="${task.id}">
+                    <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
+                    <span class="task-name">${this.escapeHtml(task.text || task.name)}</span>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+
+        // チェックボックスのイベント
+        container.querySelectorAll('.task-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                const item = e.target.closest('.due-task-item');
+                const id = item.dataset.id;
+                const type = item.dataset.type;
+
+                if (type === 'todo' && typeof ToDo !== 'undefined') {
+                    ToDo.toggle(id);
+                } else if (type === 'subtask' && typeof Storage !== 'undefined') {
+                    const task = Storage.getTask(id);
+                    if (task) {
+                        task.progress = checkbox.checked ? 100 : 0;
+                        Storage.saveTask(task);
+                    }
+                }
+                this.renderDueTasks();
+            });
+        });
     }
 };

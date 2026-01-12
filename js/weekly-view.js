@@ -431,6 +431,30 @@ const WeeklyView = {
             });
         });
 
+        // Googleカレンダーイベントクリック（編集/削除メニュー表示）
+        document.querySelectorAll('.weekly-event.google, .daily-event.google, .allday-event').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const eventId = el.dataset.eventId;
+                const calendarId = el.dataset.calendarId || 'primary';
+                const eventTitle = el.querySelector('.event-title')?.textContent || '予定';
+
+                // 確認ダイアログ
+                if (confirm(`「${eventTitle}」を削除しますか？`)) {
+                    if (typeof GoogleCalendar !== 'undefined') {
+                        GoogleCalendar.deleteEvent(eventId, calendarId).then(() => {
+                            const activeView = document.querySelector('.view-container:not(.hidden)')?.id;
+                            if (activeView === 'weeklyView') {
+                                this.renderWeekly();
+                            } else if (activeView === 'dailyView') {
+                                this.renderDaily();
+                            }
+                        });
+                    }
+                }
+            });
+        });
+
         // ドラッグ&ドロップハンドラー
         this.bindDragDrop();
 
@@ -439,7 +463,7 @@ const WeeklyView = {
     },
 
     bindDragDrop() {
-        // ドラッグ開始
+        // ドラッグ開始（時間指定イベント）
         document.querySelectorAll('.draggable-event').forEach(el => {
             el.addEventListener('dragstart', (e) => {
                 e.dataTransfer.setData('text/plain', JSON.stringify({
@@ -447,6 +471,24 @@ const WeeklyView = {
                     calendarId: el.dataset.calendarId,
                     duration: parseInt(el.dataset.duration) || 60,
                     isAllDay: el.dataset.allDay === 'true'
+                }));
+                el.classList.add('dragging');
+            });
+
+            el.addEventListener('dragend', () => {
+                el.classList.remove('dragging');
+                document.querySelectorAll('.drop-target').forEach(t => t.classList.remove('drop-target'));
+            });
+        });
+
+        // ドラッグ開始（終日イベント）
+        document.querySelectorAll('.draggable-allday').forEach(el => {
+            el.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', JSON.stringify({
+                    eventId: el.dataset.eventId,
+                    calendarId: el.dataset.calendarId,
+                    duration: 30,
+                    isAllDay: true
                 }));
                 el.classList.add('dragging');
             });

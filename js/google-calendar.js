@@ -484,6 +484,30 @@ Google Calendar API のセットアップが必要です：
         }
     },
 
+    // イベント削除
+    async deleteEvent(eventId, calendarId = 'primary') {
+        if (!this.connected) {
+            UI.showToast('Googleカレンダーに接続してください', 'warning');
+            return false;
+        }
+
+        try {
+            await gapi.client.calendar.events.delete({
+                calendarId: calendarId,
+                eventId: eventId,
+            });
+
+            console.log('イベント削除成功:', eventId);
+            UI.showToast('予定を削除しました', 'success');
+            this.fetchEvents();
+            return true;
+        } catch (error) {
+            console.error('イベント削除エラー:', error);
+            UI.showToast('予定の削除に失敗しました', 'error');
+            return false;
+        }
+    },
+
     // カレンダーリスト取得
     async listCalendars() {
         if (!this.connected) return [];
