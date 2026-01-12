@@ -1,0 +1,27 @@
+{
+    "name": "project-manager",
+    "short_name": "PM Tool",
+    "description": "プロジェクト管理ツール - ガントチャートでタスクを可視化",
+    "lang": "ja",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#0f0f1a",
+    "theme_color": "#1a1a2e",
+    "orientation": "any",
+    "icons": [
+        {
+            "src": "icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "categories": ["productivity", "business"],
+    "screenshots": []
+}

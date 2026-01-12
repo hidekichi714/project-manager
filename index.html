@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="プロジェクト管理ツール - ガントチャートでタスクを可視化">
+    <meta name="theme-color" content="#1a1a2e">
+    
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/gantt.css">
+    <link rel="stylesheet" href="css/mobile.css">
+    
+    <title>プロジェクト管理ツール</title>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <button class="menu-toggle" id="menuToggle" aria-label="メニュー">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <h1 class="header-title">
+                <span class="header-icon">📊</span>
+                プロジェクト管理
+            </h1>
+            <div class="header-actions">
+                <div class="sync-status" id="syncStatus" title="同期状態">
+                    <span class="sync-icon">●</span>
+                    <span class="sync-text">ローカル</span>
+                </div>
+                <button class="btn-icon" id="searchBtn" aria-label="検索">
+                    🔍
+                </button>
+                <button class="btn-icon" id="userBtn" aria-label="ユーザー">
+                    👤
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-wrapper">
+            <!-- Sidebar -->
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-section">
+                    <h2 class="sidebar-title">カテゴリ</h2>
+                    <ul class="category-list" id="categoryList">
+                        <li class="category-item active" data-category="all">
+                            <span class="category-icon">📁</span>
+                            <span class="category-name">すべて</span>
+                            <span class="category-count" id="countAll">0</span>
+                        </li>
+                    </ul>
+                    <button class="btn-add-category" id="addCategoryBtn">
+                        <span>+</span> カテゴリを追加
+                    </button>
+                </div>
+
+                <div class="sidebar-section">
+                    <h2 class="sidebar-title">フィルター</h2>
+                    <div class="filter-group">
+                        <label class="filter-label">ステータス</label>
+                        <select class="filter-select" id="filterStatus">
+                            <option value="all">すべて</option>
+                            <option value="todo">未着手</option>
+                            <option value="in-progress">進行中</option>
+                            <option value="done">完了</option>
+                            <option value="on-hold">保留</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">優先度</label>
+                        <select class="filter-select" id="filterPriority">
+                            <option value="all">すべて</option>
+                            <option value="high">高</option>
+                            <option value="medium">中</option>
+                            <option value="low">低</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="sidebar-section sidebar-bottom">
+                    <button class="btn-secondary" id="exportBtn">
+                        📤 エクスポート
+                    </button>
+                    <button class="btn-secondary" id="importBtn">
+                        📥 インポート
+                    </button>
+                    <input type="file" id="importFile" accept=".json" hidden>
+                </div>
+            </aside>
+
+            <!-- Main Area -->
+            <main class="main-content">
+                <!-- View Toggle -->
+                <div class="view-controls">
+                    <div class="view-toggle">
+                        <button class="view-btn active" data-view="gantt" id="viewGantt">
+                            📊 ガントチャート
+                        </button>
+                        <button class="view-btn" data-view="list" id="viewList">
+                            📋 リスト
+                        </button>
+                    </div>
+                    <button class="btn-primary" id="addProjectBtn">
+                        <span>+</span> プロジェクト追加
+                    </button>
+                </div>
+
+                <!-- Gantt Chart View -->
+                <div class="view-container" id="ganttView">
+                    <div class="gantt-controls">
+                        <button class="gantt-nav-btn" id="ganttPrev">◀</button>
+                        <span class="gantt-period" id="ganttPeriod">2026年1月</span>
+                        <button class="gantt-nav-btn" id="ganttNext">▶</button>
+                        <select class="gantt-scale" id="ganttScale">
+                            <option value="day">日</option>
+                            <option value="week" selected>週</option>
+                            <option value="month">月</option>
+                        </select>
+                    </div>
+                    <div class="gantt-container" id="ganttContainer">
+                        <div class="gantt-empty" id="ganttEmpty">
+                            <div class="empty-icon">📊</div>
+                            <p>プロジェクトがありません</p>
+                            <p class="empty-hint">「プロジェクト追加」ボタンから始めましょう</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- List View -->
+                <div class="view-container hidden" id="listView">
+                    <div class="project-list" id="projectList">
+                        <div class="list-empty" id="listEmpty">
+                            <div class="empty-icon">📋</div>
+                            <p>プロジェクトがありません</p>
+                            <p class="empty-hint">「プロジェクト追加」ボタンから始めましょう</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Project Modal -->
+    <div class="modal" id="projectModal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="projectModalTitle">プロジェクト追加</h2>
+                <button class="modal-close" id="projectModalClose">&times;</button>
+            </div>
+            <form id="projectForm">
+                <input type="hidden" id="projectId">
+                <div class="form-group">
+                    <label for="projectName">プロジェクト名 <span class="required">*</span></label>
+                    <input type="text" id="projectName" required placeholder="例：ウェブサイトリニューアル">
+                </div>
+                <div class="form-group">
+                    <label for="projectCategory">カテゴリ</label>
+                    <select id="projectCategory">
+                        <option value="">カテゴリを選択</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="projectStartDate">開始日 <span class="required">*</span></label>
+                        <input type="date" id="projectStartDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="projectEndDate">終了日 <span class="required">*</span></label>
+                        <input type="date" id="projectEndDate" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="projectDescription">説明</label>
+                    <textarea id="projectDescription" rows="3" placeholder="プロジェクトの概要"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="projectCancel">キャンセル</button>
+                    <button type="submit" class="btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div class="modal" id="taskModal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="taskModalTitle">タスク追加</h2>
+                <button class="modal-close" id="taskModalClose">&times;</button>
+            </div>
+            <form id="taskForm">
+                <input type="hidden" id="taskId">
+                <input type="hidden" id="taskProjectId">
+                <div class="form-group">
+                    <label for="taskName">タスク名 <span class="required">*</span></label>
+                    <input type="text" id="taskName" required placeholder="例：デザイン作成">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="taskPriority">優先度</label>
+                        <select id="taskPriority">
+                            <option value="medium">中</option>
+                            <option value="high">高</option>
+                            <option value="low">低</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskStatus">ステータス</label>
+                        <select id="taskStatus">
+                            <option value="todo">未着手</option>
+                            <option value="in-progress">進行中</option>
+                            <option value="done">完了</option>
+                            <option value="on-hold">保留</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="taskStartDate">開始日 <span class="required">*</span></label>
+                        <input type="date" id="taskStartDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskEndDate">終了日 <span class="required">*</span></label>
+                        <input type="date" id="taskEndDate" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="taskProgress">進捗: <span id="taskProgressValue">0</span>%</label>
+                    <input type="range" id="taskProgress" min="0" max="100" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="taskDescription">メモ</label>
+                    <textarea id="taskDescription" rows="3" placeholder="タスクの詳細やメモ"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-danger" id="taskDelete" style="display:none;">削除</button>
+                    <div class="form-actions-right">
+                        <button type="button" class="btn-secondary" id="taskCancel">キャンセル</button>
+                        <button type="submit" class="btn-primary">保存</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div class="modal" id="categoryModal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2 class="modal-title">カテゴリ追加</h2>
+                <button class="modal-close" id="categoryModalClose">&times;</button>
+            </div>
+            <form id="categoryForm">
+                <div class="form-group">
+                    <label for="categoryName">カテゴリ名 <span class="required">*</span></label>
+                    <input type="text" id="categoryName" required placeholder="例：開発">
+                </div>
+                <div class="form-group">
+                    <label for="categoryColor">カラー</label>
+                    <input type="color" id="categoryColor" value="#6366f1">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="categoryCancel">キャンセル</button>
+                    <button type="submit" class="btn-primary">追加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Search Modal -->
+    <div class="modal" id="searchModal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">検索</h2>
+                <button class="modal-close" id="searchModalClose">&times;</button>
+            </div>
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="プロジェクト名やタスク名で検索..." autofocus>
+                <div class="search-results" id="searchResults">
+                    <p class="search-hint">検索ワードを入力してください</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Modal -->
+    <div class="modal" id="userModal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2 class="modal-title">アカウント</h2>
+                <button class="modal-close" id="userModalClose">&times;</button>
+            </div>
+            <div class="user-content" id="userContent">
+                <div class="user-not-logged-in" id="userNotLoggedIn">
+                    <p>Googleアカウントでログインすると、複数デバイス間でデータを同期できます。</p>
+                    <button class="btn-google" id="googleLoginBtn">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                        Googleでログイン
+                    </button>
+                </div>
+                <div class="user-logged-in hidden" id="userLoggedIn">
+                    <div class="user-info">
+                        <img class="user-avatar" id="userAvatar" src="" alt="">
+                        <div class="user-details">
+                            <p class="user-name" id="userName"></p>
+                            <p class="user-email" id="userEmail"></p>
+                        </div>
+                    </div>
+                    <button class="btn-secondary" id="syncNowBtn">🔄 今すぐ同期</button>
+                    <button class="btn-danger" id="logoutBtn">ログアウト</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Scripts -->
+    <script src="js/storage.js"></script>
+    <script src="js/gantt.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/app.js"></script>
+    
+    <!-- Firebase (will be configured later) -->
+    <script type="module" src="js/firebase.js"></script>
+</body>
+</html>

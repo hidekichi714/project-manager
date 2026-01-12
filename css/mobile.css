@@ -1,0 +1,202 @@
+/* ===================================
+   Mobile Responsive Styles
+   =================================== */
+
+@media (max-width: 1024px) {
+    :root {
+        --sidebar-width: 260px;
+    }
+}
+
+@media (max-width: 768px) {
+    :root {
+        --header-height: 56px;
+    }
+
+    .menu-toggle {
+        display: flex;
+    }
+
+    .sidebar {
+        transform: translateX(-100%);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .sidebar-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 40;
+        opacity: 0;
+        visibility: hidden;
+        transition: all var(--transition-normal);
+    }
+
+    .sidebar-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: var(--spacing-md);
+    }
+
+    .view-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .view-toggle {
+        order: 2;
+    }
+
+    .btn-primary {
+        width: 100%;
+        justify-content: center;
+        order: 1;
+    }
+
+    .gantt-sidebar {
+        min-width: 150px;
+    }
+
+    .gantt-project-name,
+    .gantt-task-name {
+        max-width: 100px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-content {
+        width: 95%;
+        max-height: 85vh;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-title span:not(.header-icon) {
+        display: none;
+    }
+
+    .sync-status .sync-text {
+        display: none;
+    }
+
+    .view-btn {
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: 0.85rem;
+    }
+
+    .gantt-controls {
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+    }
+
+    .gantt-period {
+        order: -1;
+        width: 100%;
+    }
+
+    .gantt-sidebar {
+        min-width: 120px;
+    }
+
+    .gantt-project-row,
+    .gantt-task-row {
+        padding: var(--spacing-sm);
+    }
+
+    .gantt-task-row {
+        padding-left: calc(var(--spacing-sm) + 20px);
+    }
+
+    .gantt-project-actions {
+        display: none;
+    }
+
+    .toast-container {
+        left: var(--spacing-md);
+        right: var(--spacing-md);
+        bottom: var(--spacing-md);
+    }
+}
+
+/* Touch-friendly adjustments */
+@media (pointer: coarse) {
+
+    .btn-icon,
+    .gantt-nav-btn,
+    .gantt-project-action {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .category-item,
+    .gantt-project-row,
+    .gantt-task-row {
+        min-height: 48px;
+    }
+
+    .gantt-task-bar {
+        min-height: 28px;
+    }
+
+    input,
+    select,
+    textarea,
+    button {
+        font-size: 16px;
+        /* Prevent zoom on iOS */
+    }
+}
+
+/* Landscape phone */
+@media (max-height: 500px) and (orientation: landscape) {
+    .modal-content {
+        max-height: 95vh;
+    }
+
+    .view-container {
+        min-height: 300px;
+    }
+}
+
+/* Print styles */
+@media print {
+
+    .header,
+    .sidebar,
+    .modal,
+    .toast-container,
+    .view-controls,
+    .gantt-controls {
+        display: none !important;
+    }
+
+    .main-content {
+        margin: 0;
+        padding: 0;
+    }
+
+    .gantt-container {
+        max-height: none;
+        overflow: visible;
+    }
+
+    body {
+        background: white;
+        color: black;
+    }
+
+    .gantt-task-bar {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+}

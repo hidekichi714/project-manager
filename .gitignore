@@ -1,0 +1,27 @@
+# 依存関係・キャッシュファイル
+node_modules/
+.cache/
+dist/
+
+# IDE・エディタ設定
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS生成ファイル
+.DS_Store
+Thumbs.db
+
+# ログファイル
+*.log
+npm-debug.log*
+
+# 環境設定（機密情報を含む可能性）
+.env
+.env.local
+.env.*.local
+
+# ビルド出力
+build/
