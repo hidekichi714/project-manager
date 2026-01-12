@@ -101,17 +101,14 @@
     border-bottom: 1px solid var(--border-color);
 }
 
-/* All-Day Section */
-.weekly-allday-section {
+/* All-Day Row (between header and body) */
+.weekly-allday-row {
     display: flex;
     border-bottom: 2px solid var(--border-color);
     background: var(--color-bg-tertiary);
-    flex-shrink: 0;
 }
 
-.weekly-allday-label {
-    width: 60px;
-    flex-shrink: 0;
+.weekly-allday-row .weekly-time-gutter {
     display: flex;
     align-items: flex-start;
     justify-content: center;
@@ -122,11 +119,6 @@
     font-weight: 600;
 }
 
-.weekly-allday-grid {
-    display: flex;
-    flex: 1;
-}
-
 .weekly-allday-cell {
     flex: 1;
     border-left: 1px solid var(--border-color);
@@ -134,7 +126,6 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
-    min-height: 100%;
 }
 
 .allday-event {

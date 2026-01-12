@@ -205,13 +205,10 @@ const WeeklyView = {
             });
         });
 
-        let html = '<div class="weekly-body">';
-
-        // 終日セクション
-        const allDaySectionHeight = allDayHeight * maxAllDayVisible + 8; // padding
-        html += `<div class="weekly-allday-section" style="height: ${allDaySectionHeight}px;">`;
-        html += '<div class="weekly-allday-label">終日</div>';
-        html += '<div class="weekly-allday-grid">';
+        // 終日セクション（ヘッダーとボディの間）
+        const allDaySectionHeight = allDayHeight * maxAllDayVisible + 8;
+        let html = `<div class="weekly-allday-row" style="min-height: ${allDaySectionHeight}px;">`;
+        html += '<div class="weekly-time-gutter weekly-allday-label">終日</div>';
         days.forEach(day => {
             const dayStr = this.formatDate(day);
             const allDayEvents = allDayByDay[dayStr] || [];
@@ -233,7 +230,10 @@ const WeeklyView = {
             }
             html += '</div>';
         });
-        html += '</div></div>';
+        html += '</div>';
+
+        // スクロール可能なボディ
+        html += '<div class="weekly-body">';
 
         // 時間軸
         html += '<div class="weekly-time-column">';

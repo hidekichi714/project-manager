@@ -7,7 +7,8 @@
 }
 
 /* Calendar Controls (Merged with view-header) */
-.calendar-controls {
+.calendar-controls,
+.google-calendar-section {
     display: none;
     /* Redundant now */
 }
