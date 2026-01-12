@@ -261,14 +261,46 @@ Google Calendar API のセットアップが必要です：
 
     // UI更新
     updateUI() {
-        const section = document.getElementById('googleCalendarSection');
         const status = document.getElementById('googleCalendarStatus');
         const connectBtn = document.getElementById('connectGoogleCalendar');
         const disconnectBtn = document.getElementById('disconnectGoogleCalendar');
+        const addEventBtn = document.getElementById('addGoogleEvent');
+        const selectorContainer = document.getElementById('calendarSelectorContainer');
+        const syncStatus = document.getElementById('syncStatus');
 
+        // Sync status indicator in header
+        if (syncStatus) {
+            syncStatus.style.opacity = this.connected ? '1' : '0.3';
+            syncStatus.title = this.connected ? 'Google同期: ON' : 'Google同期: OFF';
+        }
+
+        // API未設定の場合
         if (!this.API_KEY || !this.CLIENT_ID) {
+            if (status) status.textContent = '未設定';
+            if (connectBtn) {
+                connectBtn.textContent = 'セットアップ';
+                connectBtn.onclick = () => this.showSetupInstructions();
+            }
+            return;
+        }
+
+        // 接続済みの場合
+        if (this.connected) {
+            if (status) {
+                status.textContent = '接続中';
+                status.classList.add('connected');
+            }
+            if (connectBtn) connectBtn.classList.add('hidden');
+            if (disconnectBtn) disconnectBtn.classList.remove('hidden');
+            if (selectorContainer) selectorContainer.classList.remove('hidden');
             if (addEventBtn) addEventBtn.classList.remove('hidden');
+
+            // サイドバーのカレンダーリスト更新
+            if (typeof UI !== 'undefined' && typeof UI.renderCalendarList === 'function') {
+                UI.renderCalendarList();
+            }
         } else {
+            // 未接続の場合
             if (status) {
                 status.textContent = '未接続';
                 status.classList.remove('connected');
@@ -278,12 +310,13 @@ Google Calendar API のセットアップが必要です：
                 connectBtn.onclick = () => this.connect();
             }
             if (disconnectBtn) disconnectBtn.classList.add('hidden');
-            // カレンダーセレクター非表示
-            const selectorContainer = document.getElementById('calendarSelectorContainer');
             if (selectorContainer) selectorContainer.classList.add('hidden');
-            // 予定追加ボタン非表示
-            const addEventBtn = document.getElementById('addGoogleEvent');
             if (addEventBtn) addEventBtn.classList.add('hidden');
+        }
+
+        // カレンダービュー再描画
+        if (typeof Calendar !== 'undefined') {
+            Calendar.render();
         }
     },
 
