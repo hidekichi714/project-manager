@@ -36,8 +36,10 @@ const UI = {
             // Main
             addProjectBtn: document.getElementById('addProjectBtn'),
             viewGantt: document.getElementById('viewGantt'),
+            viewCalendar: document.getElementById('viewCalendar'),
             viewList: document.getElementById('viewList'),
             ganttView: document.getElementById('ganttView'),
+            calendarView: document.getElementById('calendarView'),
             listView: document.getElementById('listView'),
             projectList: document.getElementById('projectList'),
             ganttContainer: document.getElementById('ganttContainer'),
@@ -119,6 +121,7 @@ const UI = {
 
         // View toggle
         elements.viewGantt?.addEventListener('click', () => this.switchView('gantt'));
+        elements.viewCalendar?.addEventListener('click', () => this.switchView('calendar'));
         elements.viewList?.addEventListener('click', () => this.switchView('list'));
 
         // Project modal
@@ -212,19 +215,28 @@ const UI = {
 
     // ビュー切り替え
     switchView(view) {
-        const { viewGantt, viewList, ganttView, listView } = this.elements;
+        const { viewGantt, viewCalendar, viewList, ganttView, calendarView, listView } = this.elements;
 
+        // 全て非アクティブ・非表示に
+        viewGantt?.classList.remove('active');
+        viewCalendar?.classList.remove('active');
+        viewList?.classList.remove('active');
+        ganttView?.classList.add('hidden');
+        calendarView?.classList.add('hidden');
+        listView?.classList.add('hidden');
+
+        // 選択されたビューをアクティブに
         if (view === 'gantt') {
-            viewGantt.classList.add('active');
-            viewList.classList.remove('active');
-            ganttView.classList.remove('hidden');
-            listView.classList.add('hidden');
+            viewGantt?.classList.add('active');
+            ganttView?.classList.remove('hidden');
             Gantt.render();
+        } else if (view === 'calendar') {
+            viewCalendar?.classList.add('active');
+            calendarView?.classList.remove('hidden');
+            Calendar.render();
         } else {
-            viewList.classList.add('active');
-            viewGantt.classList.remove('active');
-            listView.classList.remove('hidden');
-            ganttView.classList.add('hidden');
+            viewList?.classList.add('active');
+            listView?.classList.remove('hidden');
             this.renderProjectList();
         }
     },
