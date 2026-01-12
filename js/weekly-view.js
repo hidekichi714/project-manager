@@ -5,9 +5,11 @@
 const WeeklyView = {
     // 設定
     config: {
-        startHour: 6,
+        startHour: 4,
         endHour: 23,
         slotHeight: 48, // 1時間あたりの高さ(px)
+        allDayHeight: 28, // 終日タスク1件の高さ
+        maxAllDayVisible: 5, // 表示する終日タスクの最大数
     },
 
     // 現在の表示週
@@ -185,13 +187,53 @@ const WeeklyView = {
     },
 
     renderWeeklyBody(days, tasks, googleEvents) {
-        const { startHour, endHour, slotHeight } = this.config;
+        const { startHour, endHour, slotHeight, allDayHeight, maxAllDayVisible } = this.config;
         const hours = [];
         for (let h = startHour; h <= endHour; h++) {
             hours.push(h);
         }
 
+        // 終日イベントを抽出
+        const allDayByDay = {};
+        days.forEach(day => {
+            const dayStr = this.formatDate(day);
+            allDayByDay[dayStr] = googleEvents.filter(e => {
+                const isAllDay = !e.start.dateTime;
+                if (!isAllDay) return false;
+                const eventDate = new Date(e.start.date);
+                return eventDate.toDateString() === day.toDateString();
+            });
+        });
+
         let html = '<div class="weekly-body">';
+
+        // 終日セクション
+        const allDaySectionHeight = allDayHeight * maxAllDayVisible + 8; // padding
+        html += `<div class="weekly-allday-section" style="height: ${allDaySectionHeight}px;">`;
+        html += '<div class="weekly-allday-label">終日</div>';
+        html += '<div class="weekly-allday-grid">';
+        days.forEach(day => {
+            const dayStr = this.formatDate(day);
+            const allDayEvents = allDayByDay[dayStr] || [];
+            html += `<div class="weekly-allday-cell" data-date="${dayStr}">`;
+            allDayEvents.slice(0, maxAllDayVisible).forEach(event => {
+                html += `
+                    <div class="allday-event draggable-allday" 
+                         draggable="true"
+                         data-event-id="${event.id}"
+                         data-calendar-id="${event.calendarId || 'primary'}"
+                         data-all-day="true"
+                         style="background: ${event.calendarColor || '#4285f4'}30; border-left-color: ${event.calendarColor || '#4285f4'};">
+                        <span class="event-title">${UI.escapeHtml(event.summary || '(タイトルなし)')}</span>
+                    </div>
+                `;
+            });
+            if (allDayEvents.length > maxAllDayVisible) {
+                html += `<div class="allday-more">+${allDayEvents.length - maxAllDayVisible}件</div>`;
+            }
+            html += '</div>';
+        });
+        html += '</div></div>';
 
         // 時間軸
         html += '<div class="weekly-time-column">';
@@ -201,11 +243,13 @@ const WeeklyView = {
         html += '</div>';
 
         // 各曜日のカラム
+        html += '<div class="weekly-day-columns">';
         days.forEach(day => {
             const dayStr = this.formatDate(day);
             const dayTasks = tasks.filter(t => t.startDate === dayStr || t.endDate === dayStr);
             const dayEvents = googleEvents.filter(e => {
-                const eventDate = new Date(e.start.dateTime || e.start.date);
+                if (!e.start.dateTime) return false; // 終日は除外
+                const eventDate = new Date(e.start.dateTime);
                 return eventDate.toDateString() === day.toDateString();
             });
 
@@ -232,6 +276,7 @@ const WeeklyView = {
 
             html += '</div>';
         });
+        html += '</div>';
 
         html += '</div>';
         return html;
@@ -434,18 +479,18 @@ const WeeklyView = {
                     const dateStr = column?.dataset?.date || this.formatDate(this.currentDate);
 
                     if (data.isAllDay) {
-                        // 終日イベントを日付に移動
-                        const newDate = dateStr;
-                        const nextDay = new Date(dateStr);
-                        nextDay.setDate(nextDay.getDate() + 1);
-                        const endDate = this.formatDate(nextDay);
+                        // 終日イベントを30分の時間指定イベントに変換
+                        const startDateTime = `${dateStr}T${String(hour).padStart(2, '0')}:00:00+09:00`;
+                        const endDate = new Date(`${dateStr}T${String(hour).padStart(2, '0')}:00:00`);
+                        endDate.setMinutes(endDate.getMinutes() + 30); // 30分
+                        const endDateTime = `${dateStr}T${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}:00+09:00`;
 
                         await GoogleCalendar.updateEvent(
                             data.eventId,
                             data.calendarId,
-                            newDate,
-                            endDate,
-                            true
+                            startDateTime,
+                            endDateTime,
+                            false // 終日から時間指定へ変換
                         );
                     } else {
                         // 時間指定イベントを移動

@@ -101,6 +101,69 @@
     border-bottom: 1px solid var(--border-color);
 }
 
+/* All-Day Section */
+.weekly-allday-section {
+    display: flex;
+    border-bottom: 2px solid var(--border-color);
+    background: var(--color-bg-tertiary);
+    flex-shrink: 0;
+}
+
+.weekly-allday-label {
+    width: 60px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 8px;
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.weekly-allday-grid {
+    display: flex;
+    flex: 1;
+}
+
+.weekly-allday-cell {
+    flex: 1;
+    border-left: 1px solid var(--border-color);
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-height: 100%;
+}
+
+.allday-event {
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    border-left: 3px solid;
+    cursor: grab;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.allday-event:active {
+    cursor: grabbing;
+}
+
+.allday-more {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    padding: 2px 4px;
+}
+
+/* Weekly Day Columns Container */
+.weekly-day-columns {
+    display: flex;
+    flex: 1;
+}
+
 /* Events in Weekly View */
 .weekly-event,
 .daily-event {
