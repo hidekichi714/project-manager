@@ -4,8 +4,8 @@
 
 const GoogleCalendar = {
     // 設定
-    API_KEY: '',
-    CLIENT_ID: '',
+    API_KEY: 'AIzaSyD9NRHbJpngxYvOxVhBlBkdgsunCZHooXs',
+    CLIENT_ID: '170943366688-nchj26gtkncu6s3t9rp4hn15hea45ssh.apps.googleusercontent.com',
     DISCOVERY_DOC: 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
     SCOPES: 'https://www.googleapis.com/auth/calendar.readonly',
 
