@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="css/gantt.css">
     <link rel="stylesheet" href="css/mobile.css">
     <link rel="stylesheet" href="css/calendar.css">
+    <link rel="stylesheet" href="css/weekly-view.css">
 
     <title>プロジェクト管理ツール</title>
 </head>
@@ -111,10 +112,16 @@
                 <div class="view-controls">
                     <div class="view-toggle">
                         <button class="view-btn active" data-view="gantt" id="viewGantt">
-                            📊 ガントチャート
+                            📊 ガント
+                        </button>
+                        <button class="view-btn" data-view="weekly" id="viewWeekly">
+                            📆 週間
+                        </button>
+                        <button class="view-btn" data-view="daily" id="viewDaily">
+                            📅 日間
                         </button>
                         <button class="view-btn" data-view="calendar" id="viewCalendar">
-                            📅 カレンダー
+                            🗓️ 月間
                         </button>
                         <button class="view-btn" data-view="list" id="viewList">
                             📋 リスト
@@ -196,6 +203,32 @@
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Weekly View -->
+                <div class="view-container hidden" id="weeklyView">
+                    <div class="weekly-controls">
+                        <div class="weekly-nav">
+                            <button class="weekly-nav-btn" id="weeklyPrev">◀</button>
+                            <span class="weekly-title" id="weeklyTitle">1/6 - 1/12</span>
+                            <button class="weekly-nav-btn" id="weeklyNext">▶</button>
+                            <button class="weekly-today-btn" id="weeklyToday">今日</button>
+                        </div>
+                    </div>
+                    <div id="weeklyContainer"></div>
+                </div>
+
+                <!-- Daily View -->
+                <div class="view-container hidden" id="dailyView">
+                    <div class="daily-controls">
+                        <div class="daily-nav">
+                            <button class="daily-nav-btn" id="dailyPrev">◀</button>
+                            <span class="daily-title" id="dailyTitle">2026年1月12日 (日)</span>
+                            <button class="daily-nav-btn" id="dailyNext">▶</button>
+                            <button class="daily-today-btn" id="dailyToday">今日</button>
+                        </div>
+                    </div>
+                    <div id="dailyContainer"></div>
                 </div>
 
                 <!-- List View -->
@@ -470,6 +503,7 @@
     <script src="js/google-calendar.js"></script>
     <script src="js/reminder.js"></script>
     <script src="js/voice.js"></script>
+    <script src="js/weekly-view.js"></script>
     <script src="js/app.js"></script>
 
     <!-- Firebase -->

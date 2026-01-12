@@ -218,14 +218,22 @@ const UI = {
     // ビュー切り替え
     switchView(view) {
         const { viewGantt, viewCalendar, viewList, ganttView, calendarView, listView } = this.elements;
+        const viewWeekly = document.getElementById('viewWeekly');
+        const viewDaily = document.getElementById('viewDaily');
+        const weeklyView = document.getElementById('weeklyView');
+        const dailyView = document.getElementById('dailyView');
 
         // 全て非アクティブ・非表示に
         viewGantt?.classList.remove('active');
         viewCalendar?.classList.remove('active');
         viewList?.classList.remove('active');
+        viewWeekly?.classList.remove('active');
+        viewDaily?.classList.remove('active');
         ganttView?.classList.add('hidden');
         calendarView?.classList.add('hidden');
         listView?.classList.add('hidden');
+        weeklyView?.classList.add('hidden');
+        dailyView?.classList.add('hidden');
 
         // 選択されたビューをアクティブに
         if (view === 'gantt') {
@@ -236,6 +244,14 @@ const UI = {
             viewCalendar?.classList.add('active');
             calendarView?.classList.remove('hidden');
             Calendar.render();
+        } else if (view === 'weekly') {
+            viewWeekly?.classList.add('active');
+            weeklyView?.classList.remove('hidden');
+            if (typeof WeeklyView !== 'undefined') WeeklyView.renderWeekly();
+        } else if (view === 'daily') {
+            viewDaily?.classList.add('active');
+            dailyView?.classList.remove('hidden');
+            if (typeof WeeklyView !== 'undefined') WeeklyView.renderDaily();
         } else {
             viewList?.classList.add('active');
             listView?.classList.remove('hidden');

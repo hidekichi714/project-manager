@@ -1,0 +1,309 @@
+/* Weekly/Daily View Styles */
+
+/* Header */
+.weekly-controls,
+.daily-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.weekly-nav,
+.daily-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.weekly-nav-btn,
+.daily-nav-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-fast);
+}
+
+.weekly-nav-btn:hover,
+.daily-nav-btn:hover {
+    background: var(--color-accent-primary);
+    color: white;
+}
+
+.weekly-title,
+.daily-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    min-width: 200px;
+    text-align: center;
+}
+
+.weekly-today-btn,
+.daily-today-btn {
+    padding: var(--spacing-xs) var(--spacing-md);
+    background: var(--color-accent-primary);
+    color: white;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    transition: all var(--transition-fast);
+}
+
+.weekly-today-btn:hover,
+.daily-today-btn:hover {
+    background: var(--color-accent-secondary);
+}
+
+/* Weekly View Grid */
+.weekly-header {
+    display: flex;
+    position: sticky;
+    top: 0;
+    background: var(--color-bg-primary);
+    z-index: 10;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.weekly-time-gutter {
+    width: 60px;
+    flex-shrink: 0;
+}
+
+.weekly-day-header {
+    flex: 1;
+    padding: var(--spacing-md);
+    text-align: center;
+    border-left: 1px solid var(--border-color);
+}
+
+.weekly-day-header.today {
+    background: var(--color-accent-light);
+}
+
+.weekly-day-header.weekend {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.weekly-day-header .day-name {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.weekly-day-header .day-number {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.weekly-day-header.today .day-number {
+    width: 32px;
+    height: 32px;
+    line-height: 32px;
+    margin: 0 auto;
+    background: var(--color-accent-primary);
+    color: white;
+    border-radius: 50%;
+}
+
+/* Weekly Body */
+.weekly-body {
+    display: flex;
+    overflow-y: auto;
+    max-height: calc(100vh - 280px);
+}
+
+.weekly-time-column {
+    width: 60px;
+    flex-shrink: 0;
+    background: var(--color-bg-tertiary);
+}
+
+.weekly-time-slot {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding-right: var(--spacing-sm);
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.weekly-day-column {
+    flex: 1;
+    position: relative;
+    border-left: 1px solid var(--border-color);
+}
+
+.weekly-day-column.today {
+    background: var(--color-accent-light);
+}
+
+.weekly-day-column.weekend {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.weekly-hour-slot {
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Events in Weekly View */
+.weekly-event {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    overflow: hidden;
+    cursor: pointer;
+    border-left: 3px solid;
+    transition: all var(--transition-fast);
+    z-index: 5;
+}
+
+.weekly-event:hover {
+    z-index: 10;
+    box-shadow: var(--shadow-md);
+}
+
+.weekly-event.task {
+    background: var(--color-accent-light);
+    border-left-color: var(--color-accent-primary);
+}
+
+.weekly-event.task.priority-high {
+    background: rgba(239, 68, 68, 0.15);
+    border-left-color: var(--color-priority-high);
+}
+
+.weekly-event.task.priority-medium {
+    background: rgba(245, 158, 11, 0.15);
+    border-left-color: var(--color-priority-medium);
+}
+
+.weekly-event.task.priority-low {
+    background: rgba(16, 185, 129, 0.15);
+    border-left-color: var(--color-priority-low);
+}
+
+.weekly-event.google {
+    background: rgba(66, 133, 244, 0.15);
+    border-left-color: #4285f4;
+}
+
+.weekly-event.all-day {
+    position: relative;
+    margin-bottom: 2px;
+}
+
+.weekly-event .event-time {
+    display: block;
+    font-size: 0.65rem;
+    color: var(--color-text-muted);
+}
+
+.weekly-event .event-title {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Daily View */
+.daily-body {
+    display: flex;
+    overflow-y: auto;
+    max-height: calc(100vh - 280px);
+}
+
+.daily-time-column {
+    width: 60px;
+    flex-shrink: 0;
+    background: var(--color-bg-tertiary);
+}
+
+.daily-time-slot {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding-right: var(--spacing-sm);
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.daily-events-column {
+    flex: 1;
+    position: relative;
+    background: var(--color-bg-secondary);
+    border-left: 1px solid var(--border-color);
+}
+
+.daily-hour-slot {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.daily-hour-slot:hover {
+    background: var(--color-accent-light);
+}
+
+/* Events in Daily View */
+.daily-event {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    overflow: hidden;
+    cursor: pointer;
+    border-left: 4px solid;
+    background: var(--color-bg-secondary);
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-fast);
+    z-index: 5;
+}
+
+.daily-event:hover {
+    z-index: 10;
+    box-shadow: var(--shadow-md);
+    transform: translateX(2px);
+}
+
+.daily-event.task {
+    background: var(--color-accent-light);
+    border-left-color: var(--color-accent-primary);
+}
+
+.daily-event.task.priority-high {
+    background: rgba(239, 68, 68, 0.15);
+    border-left-color: var(--color-priority-high);
+}
+
+.daily-event.task.priority-medium {
+    background: rgba(245, 158, 11, 0.15);
+    border-left-color: var(--color-priority-medium);
+}
+
+.daily-event.task.priority-low {
+    background: rgba(16, 185, 129, 0.15);
+    border-left-color: var(--color-priority-low);
+}
+
+.daily-event .event-time {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin-bottom: 2px;
+}
+
+.daily-event .event-title {
+    display: block;
+    font-weight: 500;
+}
