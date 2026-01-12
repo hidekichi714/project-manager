@@ -125,6 +125,8 @@ const UI = {
         elements.viewGantt?.addEventListener('click', () => this.switchView('gantt'));
         elements.viewCalendar?.addEventListener('click', () => this.switchView('calendar'));
         elements.viewList?.addEventListener('click', () => this.switchView('list'));
+        document.getElementById('viewWeekly')?.addEventListener('click', () => this.switchView('weekly'));
+        document.getElementById('viewDaily')?.addEventListener('click', () => this.switchView('daily'));
 
         // Project modal
         elements.addProjectBtn?.addEventListener('click', () => this.openProjectModal());
@@ -387,6 +389,32 @@ const UI = {
         if (elements.taskAddToGoogleCalendar.checked && typeof GoogleCalendar !== 'undefined') {
             const project = Storage.getProject(task.projectId);
             await GoogleCalendar.addTaskToCalendar(savedTask, project);
+        }
+
+        // ToDoにも自動登録（終了日を期限として設定）
+        if (typeof ToDo !== 'undefined') {
+            const todos = ToDo.getAll();
+            const existingTodo = todos.find(t => t.taskId === savedTask.id);
+
+            if (!existingTodo) {
+                // 新規ToDo作成
+                const project = Storage.getProject(savedTask.projectId);
+                ToDo.saveTodo({
+                    title: project ? `[${project.name}] ${savedTask.name}` : savedTask.name,
+                    priority: savedTask.priority,
+                    dueDate: savedTask.endDate,
+                    taskId: savedTask.id,
+                    completed: savedTask.status === 'done'
+                });
+            } else {
+                // 既存ToDo更新
+                ToDo.saveTodo({
+                    ...existingTodo,
+                    dueDate: savedTask.endDate,
+                    completed: savedTask.status === 'done'
+                });
+            }
+            ToDo.render();
         }
 
         this.closeModal(elements.taskModal);
