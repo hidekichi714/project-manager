@@ -4,14 +4,13 @@
  */
 
 // Firebase設定
-// 注意: 以下の値をFirebase Consoleで作成したプロジェクトの設定に置き換えてください
 const firebaseConfig = {
-    apiKey: "",
-    authDomain: "",
-    projectId: "",
-    storageBucket: "",
-    messagingSenderId: "",
-    appId: ""
+    apiKey: "AIzaSyB24akb9tN6gnAHoRw84KrOq_F42n81n_g",
+    authDomain: "project-manager-a387a.firebaseapp.com",
+    projectId: "project-manager-a387a",
+    storageBucket: "project-manager-a387a.firebasestorage.app",
+    messagingSenderId: "552802773314",
+    appId: "1:552802773314:web:2ce724740dbc3d499200db"
 };
 
 // Firebase SDKのインポート（CDN経由）
