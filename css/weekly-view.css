@@ -307,3 +307,29 @@
     display: block;
     font-weight: 500;
 }
+
+/* Drag and Drop Styles */
+.draggable-event {
+    cursor: grab;
+}
+
+.draggable-event:active {
+    cursor: grabbing;
+}
+
+.draggable-event.dragging {
+    opacity: 0.5;
+    transform: scale(1.02);
+    box-shadow: var(--shadow-lg);
+}
+
+.weekly-hour-slot.drop-target,
+.daily-hour-slot.drop-target {
+    background: var(--color-accent-light) !important;
+    border: 2px dashed var(--color-accent-primary);
+}
+
+.weekly-day-column.drop-target,
+.daily-events-column.drop-target {
+    background: rgba(66, 133, 244, 0.1) !important;
+}

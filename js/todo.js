@@ -242,20 +242,43 @@ const ToDo = {
         document.getElementById('todoModal')?.classList.remove('active');
     },
 
-    handleSubmit(e) {
+    async handleSubmit(e) {
         e.preventDefault();
+
+        const syncGoogle = document.getElementById('todoSyncGoogle')?.checked;
+        const dueDate = document.getElementById('todoDueDate').value || null;
 
         const todo = {
             id: document.getElementById('todoId').value || null,
             title: document.getElementById('todoTitle').value,
             priority: document.getElementById('todoPriority').value,
-            dueDate: document.getElementById('todoDueDate').value || null,
+            dueDate: dueDate,
         };
 
-        this.saveTodo(todo);
+        const savedTodo = this.saveTodo(todo);
+
+        // Google Calendarに同期
+        if (syncGoogle && dueDate && typeof GoogleCalendar !== 'undefined' && GoogleCalendar.connected) {
+            try {
+                await GoogleCalendar.createEvent({
+                    title: savedTodo.title,
+                    allDay: true,
+                    startDate: dueDate,
+                    endDate: dueDate,
+                    description: `ToDo: ${savedTodo.title}\n優先度: ${this.getPriorityLabel(savedTodo.priority)}`
+                });
+                UI.showToast('ToDoをGoogle Calendarに同期しました', 'success');
+            } catch (error) {
+                console.error('Google Calendar sync error:', error);
+                UI.showToast('Google Calendar同期に失敗しました', 'warning');
+            }
+        }
+
         this.closeModal();
         this.render(document.querySelector('.todo-filter-btn.active')?.dataset.filter || 'all');
-        UI.showToast(todo.id ? 'ToDoを更新しました' : 'ToDoを追加しました', 'success');
+        if (!syncGoogle) {
+            UI.showToast(todo.id ? 'ToDoを更新しました' : 'ToDoを追加しました', 'success');
+        }
     },
 
     // ユーティリティ

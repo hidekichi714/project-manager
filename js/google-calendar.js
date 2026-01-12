@@ -436,6 +436,41 @@ Google Calendar API のセットアップが必要です：
         return date.toISOString();
     },
 
+    // イベント更新（ドラッグ&ドロップ用）
+    async updateEvent(eventId, calendarId, newStart, newEnd, isAllDay = false) {
+        if (!this.connected) {
+            UI.showToast('Googleカレンダーに接続してください', 'warning');
+            return null;
+        }
+
+        try {
+            let update = {};
+
+            if (isAllDay) {
+                update.start = { date: newStart };
+                update.end = { date: newEnd };
+            } else {
+                update.start = { dateTime: newStart, timeZone: 'Asia/Tokyo' };
+                update.end = { dateTime: newEnd, timeZone: 'Asia/Tokyo' };
+            }
+
+            const response = await gapi.client.calendar.events.patch({
+                calendarId: calendarId || 'primary',
+                eventId: eventId,
+                resource: update,
+            });
+
+            console.log('イベント更新成功:', response.result);
+            UI.showToast('予定を移動しました', 'success');
+            this.fetchEvents();
+            return response.result;
+        } catch (error) {
+            console.error('イベント更新エラー:', error);
+            UI.showToast('予定の移動に失敗しました', 'error');
+            return null;
+        }
+    },
+
     // イベントモーダル
     openEventModal(defaultDate = null) {
         const modal = document.getElementById('googleEventModal');
