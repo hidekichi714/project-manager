@@ -334,6 +334,25 @@
     color: var(--color-text-primary);
 }
 
+/* Add Event Button */
+.btn-add-event {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: var(--color-success);
+    border-radius: var(--radius-sm);
+    color: white;
+    font-size: 0.9rem;
+    margin-top: var(--spacing-md);
+    transition: all var(--transition-fast);
+}
+
+.btn-add-event:hover {
+    background: #0d9668;
+    transform: translateY(-2px);
+}
+
 /* Mobile Calendar */
 @media (max-width: 768px) {
     .calendar-day {

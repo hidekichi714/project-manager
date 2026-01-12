@@ -285,6 +285,9 @@ Google Calendar API のセットアップが必要です：
             // カレンダーセレクター表示
             const selectorContainer = document.getElementById('calendarSelectorContainer');
             if (selectorContainer) selectorContainer.classList.remove('hidden');
+            // 予定追加ボタン表示
+            const addEventBtn = document.getElementById('addGoogleEvent');
+            if (addEventBtn) addEventBtn.classList.remove('hidden');
         } else {
             if (status) {
                 status.textContent = '未接続';
@@ -298,6 +301,9 @@ Google Calendar API のセットアップが必要です：
             // カレンダーセレクター非表示
             const selectorContainer = document.getElementById('calendarSelectorContainer');
             if (selectorContainer) selectorContainer.classList.add('hidden');
+            // 予定追加ボタン非表示
+            const addEventBtn = document.getElementById('addGoogleEvent');
+            if (addEventBtn) addEventBtn.classList.add('hidden');
         }
     },
 
@@ -368,6 +374,111 @@ Google Calendar API のセットアップが必要です：
         // Google Calendar color IDs: 11=赤, 5=黄, 2=緑
         const colors = { 'high': '11', 'medium': '5', 'low': '2' };
         return colors[priority] || '9';
+    },
+
+    // 新規イベント作成
+    async createEvent(eventData) {
+        if (!this.connected) {
+            UI.showToast('Googleカレンダーに接続してください', 'warning');
+            return null;
+        }
+
+        try {
+            let event = {
+                summary: eventData.title,
+                description: eventData.description || '',
+            };
+
+            if (eventData.allDay) {
+                // 終日イベント
+                event.start = { date: eventData.startDate };
+                event.end = { date: this.addDays(eventData.endDate || eventData.startDate, 1) };
+            } else {
+                // 時間指定イベント
+                event.start = { dateTime: eventData.startTime, timeZone: 'Asia/Tokyo' };
+                event.end = { dateTime: eventData.endTime || this.addHours(eventData.startTime, 1), timeZone: 'Asia/Tokyo' };
+            }
+
+            const response = await gapi.client.calendar.events.insert({
+                calendarId: 'primary',
+                resource: event,
+            });
+
+            console.log('イベント作成成功:', response.result);
+            UI.showToast('予定を追加しました', 'success');
+            this.fetchEvents();
+            return response.result;
+        } catch (error) {
+            console.error('イベント作成エラー:', error);
+            UI.showToast('予定の追加に失敗しました', 'error');
+            return null;
+        }
+    },
+
+    addHours(dateTimeStr, hours) {
+        const date = new Date(dateTimeStr);
+        date.setHours(date.getHours() + hours);
+        return date.toISOString();
+    },
+
+    // イベントモーダル
+    openEventModal(defaultDate = null) {
+        const modal = document.getElementById('googleEventModal');
+        const form = document.getElementById('googleEventForm');
+        const startDate = document.getElementById('googleEventStartDate');
+        const allDayCheckbox = document.getElementById('googleEventAllDay');
+
+        form.reset();
+        allDayCheckbox.checked = true;
+        this.toggleTimeFields(true);
+
+        // デフォルト日付設定
+        const today = defaultDate || new Date().toISOString().split('T')[0];
+        startDate.value = today;
+
+        modal.classList.add('active');
+    },
+
+    closeEventModal() {
+        document.getElementById('googleEventModal')?.classList.remove('active');
+    },
+
+    toggleTimeFields(isAllDay) {
+        const dateRow = document.getElementById('googleEventDateRow');
+        const timeRow = document.getElementById('googleEventTimeRow');
+
+        if (isAllDay) {
+            dateRow.classList.remove('hidden');
+            timeRow.classList.add('hidden');
+        } else {
+            dateRow.classList.add('hidden');
+            timeRow.classList.remove('hidden');
+        }
+    },
+
+    async handleEventSubmit(e) {
+        e.preventDefault();
+
+        const allDay = document.getElementById('googleEventAllDay').checked;
+
+        const eventData = {
+            title: document.getElementById('googleEventTitle').value,
+            description: document.getElementById('googleEventDescription').value,
+            allDay: allDay,
+        };
+
+        if (allDay) {
+            eventData.startDate = document.getElementById('googleEventStartDate').value;
+            eventData.endDate = document.getElementById('googleEventEndDate').value || eventData.startDate;
+        } else {
+            eventData.startTime = document.getElementById('googleEventStartTime').value;
+            eventData.endTime = document.getElementById('googleEventEndTime').value;
+        }
+
+        const result = await this.createEvent(eventData);
+        if (result) {
+            this.closeEventModal();
+        }
     }
 };
 
@@ -379,6 +490,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('disconnectGoogleCalendar')?.addEventListener('click', () => {
         GoogleCalendar.disconnect();
+    });
+
+    // 予定追加ボタン
+    document.getElementById('addGoogleEvent')?.addEventListener('click', () => {
+        GoogleCalendar.openEventModal();
+    });
+
+    // モーダル閉じる
+    document.getElementById('googleEventModalClose')?.addEventListener('click', () => {
+        GoogleCalendar.closeEventModal();
+    });
+    document.getElementById('googleEventCancel')?.addEventListener('click', () => {
+        GoogleCalendar.closeEventModal();
+    });
+
+    // 終日トグル
+    document.getElementById('googleEventAllDay')?.addEventListener('change', (e) => {
+        GoogleCalendar.toggleTimeFields(e.target.checked);
+    });
+
+    // フォーム送信
+    document.getElementById('googleEventForm')?.addEventListener('submit', (e) => {
+        GoogleCalendar.handleEventSubmit(e);
     });
 
     // 初期化
