@@ -613,10 +613,12 @@ const WeeklyView = {
 
                     if (data.isAllDay) {
                         // 終日イベントを30分の時間指定イベントに変換
-                        const startDateTime = `${dateStr}T${String(hour).padStart(2, '0')}:00:00+09:00`;
-                        const endDate = new Date(`${dateStr}T${String(hour).padStart(2, '0')}:00:00`);
-                        endDate.setMinutes(endDate.getMinutes() + 30); // 30分
-                        const endDateTime = `${dateStr}T${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}:00+09:00`;
+                        const startDate = new Date(`${dateStr}T${String(hour).padStart(2, '0')}:00:00`);
+                        const endDate = new Date(startDate.getTime() + 30 * 60 * 1000); // 30分後
+
+                        // ISO形式に変換（タイムゾーン指定あり）
+                        const startDateTime = startDate.toISOString();
+                        const endDateTime = endDate.toISOString();
 
                         await GoogleCalendar.updateEvent(
                             data.eventId,
@@ -627,10 +629,11 @@ const WeeklyView = {
                         );
                     } else {
                         // 時間指定イベントを移動
-                        const startDateTime = `${dateStr}T${String(hour).padStart(2, '0')}:00:00+09:00`;
-                        const endDate = new Date(`${dateStr}T${String(hour).padStart(2, '0')}:00:00`);
-                        endDate.setMinutes(endDate.getMinutes() + data.duration);
-                        const endDateTime = `${dateStr}T${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}:00+09:00`;
+                        const startDate = new Date(`${dateStr}T${String(hour).padStart(2, '0')}:00:00`);
+                        const endDate = new Date(startDate.getTime() + data.duration * 60 * 1000);
+
+                        const startDateTime = startDate.toISOString();
+                        const endDateTime = endDate.toISOString();
 
                         await GoogleCalendar.updateEvent(
                             data.eventId,
