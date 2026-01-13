@@ -716,227 +716,226 @@ const WeeklyView = {
                     console.error('Drag drop error:', error);
                     UI.showToast('移動できませんでした: ' + (error.message || 'エラー'), 'error');
                 }
-            }
             });
-    });
+        });
 
-// ToDoドラッグハンドラー
-this.bindTodoDrag();
+        // ToDoドラッグハンドラー
+        this.bindTodoDrag();
     },
 
-bindTodoDrag() {
-    document.querySelectorAll('.draggable-todo').forEach(el => {
-        el.addEventListener('dragstart', (e) => {
-            e.dataTransfer.setData('text/plain', JSON.stringify({
-                type: 'todo',
-                todoId: el.dataset.todoId,
-                title: el.dataset.todoTitle,
-                date: el.dataset.todoDate
-            }));
-            el.classList.add('dragging');
+    bindTodoDrag() {
+        document.querySelectorAll('.draggable-todo').forEach(el => {
+            el.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', JSON.stringify({
+                    type: 'todo',
+                    todoId: el.dataset.todoId,
+                    title: el.dataset.todoTitle,
+                    date: el.dataset.todoDate
+                }));
+                el.classList.add('dragging');
+            });
+
+            el.addEventListener('dragend', () => {
+                el.classList.remove('dragging');
+            });
         });
 
-        el.addEventListener('dragend', () => {
-            el.classList.remove('dragging');
-        });
-    });
+        // 日付カラムへのドロップを追加
+        document.querySelectorAll('.weekly-day-column, .daily-events-column').forEach(column => {
+            column.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                column.classList.add('drop-target');
+            });
 
-    // 日付カラムへのドロップを追加
-    document.querySelectorAll('.weekly-day-column, .daily-events-column').forEach(column => {
-        column.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            column.classList.add('drop-target');
-        });
+            column.addEventListener('dragleave', () => {
+                column.classList.remove('drop-target');
+            });
 
-        column.addEventListener('dragleave', () => {
-            column.classList.remove('drop-target');
-        });
+            column.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                column.classList.remove('drop-target');
 
-        column.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            column.classList.remove('drop-target');
+                try {
+                    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
 
-            try {
-                const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+                    // ToDoをGoogle Calendarに登録
+                    if (data.type === 'todo' && typeof GoogleCalendar !== 'undefined' && GoogleCalendar.connected) {
+                        const dateStr = column.dataset.date;
 
-                // ToDoをGoogle Calendarに登録
-                if (data.type === 'todo' && typeof GoogleCalendar !== 'undefined' && GoogleCalendar.connected) {
-                    const dateStr = column.dataset.date;
+                        await GoogleCalendar.createEvent({
+                            title: data.title,
+                            allDay: true,
+                            startDate: dateStr,
+                            endDate: dateStr,
+                            description: 'ToDoから登録'
+                        });
 
-                    await GoogleCalendar.createEvent({
-                        title: data.title,
-                        allDay: true,
-                        startDate: dateStr,
-                        endDate: dateStr,
-                        description: 'ToDoから登録'
-                    });
-
-                    UI.showToast('Google Calendarに予定を追加しました', 'success');
-                    const activeView = document.querySelector('.view-container:not(.hidden)')?.id;
-                    if (activeView === 'weeklyView') {
-                        this.renderWeekly();
-                    } else {
-                        this.renderDaily();
+                        UI.showToast('Google Calendarに予定を追加しました', 'success');
+                        const activeView = document.querySelector('.view-container:not(.hidden)')?.id;
+                        if (activeView === 'weeklyView') {
+                            this.renderWeekly();
+                        } else {
+                            this.renderDaily();
+                        }
                     }
+                } catch (error) {
+                    console.error('Todo drop error:', error);
                 }
-            } catch (error) {
-                console.error('Todo drop error:', error);
-            }
+            });
         });
-    });
-},
+    },
 
-// リサイズ機能の初期化
-initResize() {
-    const container = document.querySelector('.main-content');
-    if (!container) return;
+    // リサイズ機能の初期化
+    initResize() {
+        const container = document.querySelector('.main-content');
+        if (!container) return;
 
-    container.addEventListener('mousedown', (e) => {
-        const handle = e.target.closest('.event-resize-handle');
-        if (!handle) return;
+        container.addEventListener('mousedown', (e) => {
+            const handle = e.target.closest('.event-resize-handle');
+            if (!handle) return;
 
-        e.preventDefault();
-        e.stopPropagation();
+            e.preventDefault();
+            e.stopPropagation();
 
-        const eventBlock = handle.closest('.weekly-event, .daily-event');
-        if (!eventBlock) return;
+            const eventBlock = handle.closest('.weekly-event, .daily-event');
+            if (!eventBlock) return;
 
-        const isTop = handle.classList.contains('event-resize-top');
+            const isTop = handle.classList.contains('event-resize-top');
 
-        this.resizeState = {
-            isResizing: true,
-            type: isTop ? 'top' : 'bottom',
-            eventId: eventBlock.dataset.eventId,
-            calendarId: eventBlock.dataset.calendarId,
-            originalY: e.clientY,
-            originalTop: parseInt(eventBlock.style.top) || 0,
-            originalHeight: parseInt(eventBlock.style.height) || 0,
-            element: eventBlock,
-            duration: parseInt(eventBlock.dataset.duration) || 60
-        };
+            this.resizeState = {
+                isResizing: true,
+                type: isTop ? 'top' : 'bottom',
+                eventId: eventBlock.dataset.eventId,
+                calendarId: eventBlock.dataset.calendarId,
+                originalY: e.clientY,
+                originalTop: parseInt(eventBlock.style.top) || 0,
+                originalHeight: parseInt(eventBlock.style.height) || 0,
+                element: eventBlock,
+                duration: parseInt(eventBlock.dataset.duration) || 60
+            };
 
-        eventBlock.classList.add('resizing');
+            eventBlock.classList.add('resizing');
 
-        // マウス移動と終了のイベントを登録
-        const moveHandler = (moveEvent) => this.handleResizeMove(moveEvent);
-        const upHandler = () => {
-            this.handleResizeEnd();
-            window.removeEventListener('mousemove', moveHandler);
-            window.removeEventListener('mouseup', upHandler);
-        };
+            // マウス移動と終了のイベントを登録
+            const moveHandler = (moveEvent) => this.handleResizeMove(moveEvent);
+            const upHandler = () => {
+                this.handleResizeEnd();
+                window.removeEventListener('mousemove', moveHandler);
+                window.removeEventListener('mouseup', upHandler);
+            };
 
-        window.addEventListener('mousemove', moveHandler);
-        window.addEventListener('mouseup', upHandler);
-    });
-},
+            window.addEventListener('mousemove', moveHandler);
+            window.addEventListener('mouseup', upHandler);
+        });
+    },
 
-handleResizeMove(e) {
-    if (!this.resizeState.isResizing) return;
+    handleResizeMove(e) {
+        if (!this.resizeState.isResizing) return;
 
-    const deltaY = e.clientY - this.resizeState.originalY;
-    const { type, originalTop, originalHeight, element } = this.resizeState;
-    const slotHeight = this.config.slotHeight;
+        const deltaY = e.clientY - this.resizeState.originalY;
+        const { type, originalTop, originalHeight, element } = this.resizeState;
+        const slotHeight = this.config.slotHeight;
 
-    if (type === 'bottom') {
-        const newHeight = Math.max(slotHeight / 4, originalHeight + deltaY);
-        element.style.height = `${newHeight}px`;
-    } else if (type === 'top') {
-        const newTop = originalTop + deltaY;
-        const newHeight = Math.max(slotHeight / 4, originalHeight - deltaY);
-
-        if (newHeight > slotHeight / 4) {
-            element.style.top = `${newTop}px`;
+        if (type === 'bottom') {
+            const newHeight = Math.max(slotHeight / 4, originalHeight + deltaY);
             element.style.height = `${newHeight}px`;
+        } else if (type === 'top') {
+            const newTop = originalTop + deltaY;
+            const newHeight = Math.max(slotHeight / 4, originalHeight - deltaY);
+
+            if (newHeight > slotHeight / 4) {
+                element.style.top = `${newTop}px`;
+                element.style.height = `${newHeight}px`;
+            }
         }
-    }
-},
+    },
 
     async handleResizeEnd() {
-    if (!this.resizeState.isResizing) return;
+        if (!this.resizeState.isResizing) return;
 
-    const { element, eventId, calendarId } = this.resizeState;
-    element.classList.remove('resizing');
-    this.resizeState.isResizing = false;
+        const { element, eventId, calendarId } = this.resizeState;
+        element.classList.remove('resizing');
+        this.resizeState.isResizing = false;
 
-    const top = parseInt(element.style.top) || 0;
-    const height = parseInt(element.style.height) || 0;
-    const slotHeight = this.config.slotHeight;
-    const startHour = this.config.startHour;
+        const top = parseInt(element.style.top) || 0;
+        const height = parseInt(element.style.height) || 0;
+        const slotHeight = this.config.slotHeight;
+        const startHour = this.config.startHour;
 
-    // 新しい開始時間と終了時間を計算
-    const startMinutesTotal = (top / slotHeight) * 60;
-    const durationMinutes = (height / slotHeight) * 60;
+        // 新しい開始時間と終了時間を計算
+        const startMinutesTotal = (top / slotHeight) * 60;
+        const durationMinutes = (height / slotHeight) * 60;
 
-    const startH = Math.floor(startMinutesTotal / 60) + startHour;
-    const startM = Math.round((startMinutesTotal % 60) / 15) * 15; // 15分単位にスナップ
+        const startH = Math.floor(startMinutesTotal / 60) + startHour;
+        const startM = Math.round((startMinutesTotal % 60) / 15) * 15; // 15分単位にスナップ
 
-    const column = element.closest('.weekly-day-column, .daily-events-column');
-    const dateStr = column?.dataset?.date || this.formatDate(this.currentDate);
+        const column = element.closest('.weekly-day-column, .daily-events-column');
+        const dateStr = column?.dataset?.date || this.formatDate(this.currentDate);
 
-    const newStart = new Date(`${dateStr}T${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}:00`);
-    const newEnd = new Date(newStart.getTime() + durationMinutes * 60000);
+        const newStart = new Date(`${dateStr}T${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}:00`);
+        const newEnd = new Date(newStart.getTime() + durationMinutes * 60000);
 
-    try {
-        await GoogleCalendar.updateEvent(
-            eventId,
-            calendarId,
-            newStart.toISOString(),
-            newEnd.toISOString(),
-            false
-        );
-        UI.showToast('予定の期間を更新しました', 'success');
-    } catch (error) {
-        console.error('Resize update error:', error);
-        UI.showToast('予定の更新に失敗しました', 'warning');
-    }
+        try {
+            await GoogleCalendar.updateEvent(
+                eventId,
+                calendarId,
+                newStart.toISOString(),
+                newEnd.toISOString(),
+                false
+            );
+            UI.showToast('予定の期間を更新しました', 'success');
+        } catch (error) {
+            console.error('Resize update error:', error);
+            UI.showToast('予定の更新に失敗しました', 'warning');
+        }
 
-    // ビュー再描画
-    const activeView = document.querySelector('.view-container:not(.hidden)')?.id;
-    if (activeView === 'weeklyView') {
-        this.renderWeekly();
-    } else {
-        this.renderDaily();
-    }
-},
+        // ビュー再描画
+        const activeView = document.querySelector('.view-container:not(.hidden)')?.id;
+        if (activeView === 'weeklyView') {
+            this.renderWeekly();
+        } else {
+            this.renderDaily();
+        }
+    },
 
-// ユーティリティ
-formatDate(date) {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-},
+    // ユーティリティ
+    formatDate(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    },
 
-formatDateShort(date) {
-    return `${date.getMonth() + 1}/${date.getDate()}`;
-},
+    formatDateShort(date) {
+        return `${date.getMonth() + 1}/${date.getDate()}`;
+    },
 
-formatTime(input) {
-    // Dateオブジェクトの場合
-    if (input instanceof Date) {
-        const h = input.getHours();
-        const m = input.getMinutes();
+    formatTime(input) {
+        // Dateオブジェクトの場合
+        if (input instanceof Date) {
+            const h = input.getHours();
+            const m = input.getMinutes();
+            return `${h}:${m.toString().padStart(2, '0')}`;
+        }
+        // 数値（分）の場合
+        const h = Math.floor(input / 60);
+        const m = input % 60;
         return `${h}:${m.toString().padStart(2, '0')}`;
+    },
+
+    // 日付フォーマット (範囲用)
+    formatDateRange(date) {
+        return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+    },
+
+    // 週番号を取得
+    getWeekNumber(date) {
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        const dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
     }
-    // 数値（分）の場合
-    const h = Math.floor(input / 60);
-    const m = input % 60;
-    return `${h}:${m.toString().padStart(2, '0')}`;
-},
-
-// 日付フォーマット (範囲用)
-formatDateRange(date) {
-    return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
-},
-
-// 週番号を取得
-getWeekNumber(date) {
-    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const dayNum = d.getUTCDay() || 7;
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-}
 };
 
 // 初期化
