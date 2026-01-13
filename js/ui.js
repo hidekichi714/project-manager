@@ -219,22 +219,51 @@ const UI = {
         });
 
         // Quick Add Form
-        document.getElementById('quickAddForm')?.addEventListener('submit', (e) => {
+        document.getElementById('quickAddForm')?.addEventListener('submit', async (e) => {
             e.preventDefault();
             const input = document.getElementById('quickAddInput');
+            const dateInput = document.getElementById('quickAddDate');
+            const calendarSelect = document.getElementById('quickAddCalendar');
+
             const text = input?.value?.trim();
+            const dueDate = dateInput?.value || new Date().toISOString().split('T')[0];
+            const calendarId = calendarSelect?.value;
+
             if (text && typeof ToDo !== 'undefined') {
-                ToDo.saveTodo({
+                const savedTodo = ToDo.saveTodo({
                     title: text,
-                    dueDate: new Date().toISOString().split('T')[0],
+                    dueDate: dueDate,
                     priority: 'medium'
                 });
+
+                // Google Calendarに同期
+                if (calendarId && typeof GoogleCalendar !== 'undefined' && GoogleCalendar.connected) {
+                    try {
+                        await GoogleCalendar.addEvent({
+                            title: text,
+                            allDay: true,
+                            startDate: dueDate,
+                            endDate: dueDate,
+                            calendarId: calendarId
+                        });
+                        this.showToast('タスクを追加し、Googleカレンダーに同期しました', 'success');
+                    } catch (error) {
+                        console.error('Google Calendar sync error:', error);
+                        this.showToast('タスクを追加しましたが、カレンダー同期に失敗しました', 'warning');
+                    }
+                } else {
+                    this.showToast('タスクを追加しました', 'success');
+                }
+
                 input.value = '';
+                dateInput.value = '';
                 ToDo.render();
                 this.renderDueTasks();
-                this.showToast('タスクを追加しました', 'success');
             }
         });
+
+        // Quick Add Calendar Selector - populate from Google Calendar
+        this.populateQuickAddCalendar();
 
         // Initial render of due tasks
         this.renderDueTasks();
@@ -831,6 +860,25 @@ const UI = {
                 }
             });
         });
+    },
+
+    // Quick Add Calendar Selector を更新
+    populateQuickAddCalendar() {
+        const select = document.getElementById('quickAddCalendar');
+        if (!select) return;
+
+        // Google Calendarが接続されている場合のみ
+        if (typeof GoogleCalendar !== 'undefined' && GoogleCalendar.connected && GoogleCalendar.calendars) {
+            let options = '<option value="">同期しない</option>';
+            GoogleCalendar.calendars.forEach(cal => {
+                options += `<option value="${cal.id}">${this.escapeHtml(cal.summary)}</option>`;
+            });
+            select.innerHTML = options;
+            select.disabled = false;
+        } else {
+            select.innerHTML = '<option value="">Googleカレンダー未接続</option>';
+            select.disabled = true;
+        }
     },
 
     // フィルタ適用

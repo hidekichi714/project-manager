@@ -138,6 +138,11 @@ const GoogleCalendar = {
             // カレンダー一覧を取得
             await this.fetchCalendars();
 
+            // Quick Add Calendar Selectorを更新
+            if (typeof UI !== 'undefined') {
+                UI.populateQuickAddCalendar();
+            }
+
             const now = new Date();
             const timeMin = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
             const timeMax = new Date(now.getFullYear(), now.getMonth() + 2, 0).toISOString();

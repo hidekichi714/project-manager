@@ -78,8 +78,16 @@
                 <!-- Quick Add Section -->
                 <div class="sidebar-section quick-add-section">
                     <form id="quickAddForm" class="quick-add-form">
-                        <input type="text" id="quickAddInput" placeholder="タスクを追加..." class="quick-add-input">
-                        <button type="submit" class="quick-add-btn">+</button>
+                        <div class="quick-add-row">
+                            <input type="text" id="quickAddInput" placeholder="タスクを追加..." class="quick-add-input">
+                            <button type="submit" class="quick-add-btn">+</button>
+                        </div>
+                        <div class="quick-add-options">
+                            <input type="date" id="quickAddDate" class="quick-add-date" title="期限日">
+                            <select id="quickAddCalendar" class="quick-add-calendar" title="カレンダー同期">
+                                <option value="">同期しない</option>
+                            </select>
+                        </div>
                     </form>
                 </div>
 

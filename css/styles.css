@@ -489,6 +489,36 @@ textarea {
     background: var(--color-accent-secondary);
 }
 
+.quick-add-row {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.quick-add-options {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+}
+
+.quick-add-date {
+    flex: 1;
+    padding: 6px var(--spacing-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    background: var(--color-bg-secondary);
+}
+
+.quick-add-calendar {
+    flex: 1;
+    padding: 6px var(--spacing-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    background: var(--color-bg-secondary);
+    cursor: pointer;
+}
+
 .category-list {
     list-style: none;
     display: flex;
