@@ -572,13 +572,20 @@ Google Calendar API のセットアップが必要です：
                 update.start = { date: startDate };
                 update.end = { date: endDate };
             } else {
-                // 時間指定イベント - ISO 8601形式で送信
-                // toISOString()はUTC時間を返すので、そのまま使用
-                update.start = { dateTime: newStart, timeZone: 'UTC' };
-                update.end = { dateTime: newEnd, timeZone: 'UTC' };
+                // 時間指定イベント
+                // Google Calendar API は RFC3339 形式を要求
+                // 終日イベントから時間指定イベントへの変換時は、dateフィールドを削除し、dateTimeフィールドを設定
+                update.start = {
+                    dateTime: newStart,
+                    timeZone: 'Asia/Tokyo'
+                };
+                update.end = {
+                    dateTime: newEnd,
+                    timeZone: 'Asia/Tokyo'
+                };
             }
 
-            console.log('updateEvent params:', { eventId, calendarId, update });
+            console.log('updateEvent params:', { eventId, calendarId, update, isAllDay });
 
             const response = await gapi.client.calendar.events.patch({
                 calendarId: calendarId || 'primary',
@@ -592,7 +599,14 @@ Google Calendar API のセットアップが必要です：
             return response.result;
         } catch (error) {
             console.error('イベント更新エラー:', error);
-            UI.showToast('予定の移動に失敗しました', 'error');
+            // 詳細なエラー情報を取得
+            if (error.result && error.result.error) {
+                console.error('API Error details:', error.result.error);
+                const errorMessage = error.result.error.message || 'Unknown error';
+                UI.showToast(`移動失敗: ${errorMessage}`, 'error');
+            } else {
+                UI.showToast('予定の移動に失敗しました', 'error');
+            }
             return null;
         }
     },
