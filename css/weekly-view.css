@@ -87,15 +87,19 @@
     flex: 1;
     position: relative;
     border-left: 1px solid var(--border-color);
-    min-height: 100%;
 }
 
 .weekly-day-column.today {
     background: var(--color-accent-light);
 }
 
+.weekly-hour-slot {
+    height: 60px;
+    box-sizing: border-box;
+}
+
 .weekly-day-column.today .weekly-hour-slot {
-    background: inherit;
+    background: var(--color-accent-light);
 }
 
 .weekly-day-column.weekend {
