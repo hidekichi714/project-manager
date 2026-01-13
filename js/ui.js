@@ -890,10 +890,10 @@ const UI = {
 
         // ToDoから取得
         if (typeof ToDo !== 'undefined') {
-            const todos = ToDo.getAll?.() || JSON.parse(localStorage.getItem('todos') || '[]');
+            const todos = ToDo.getAll?.() || JSON.parse(localStorage.getItem('pm_todos') || '[]');
             dueTasks = dueTasks.concat(
                 todos.filter(t => !t.completed && t.dueDate && t.dueDate <= today)
-                    .map(t => ({ ...t, type: 'todo' }))
+                    .map(t => ({ ...t, type: 'todo', displayName: t.title }))
             );
         }
 
@@ -904,7 +904,7 @@ const UI = {
                 const tasks = Storage.getTasks?.(project.id) || [];
                 tasks.forEach(task => {
                     if (task.endDate && task.endDate <= today && task.progress < 100) {
-                        dueTasks.push({ ...task, type: 'subtask', projectName: project.name });
+                        dueTasks.push({ ...task, type: 'subtask', projectName: project.name, displayName: task.name });
                     }
                 });
             });
@@ -917,11 +917,11 @@ const UI = {
 
         let html = '';
         dueTasks.slice(0, 10).forEach(task => {
-            const isOverdue = task.dueDate < today || task.endDate < today;
+            const isOverdue = (task.dueDate && task.dueDate < today) || (task.endDate && task.endDate < today);
             html += `
                 <div class="due-task-item ${isOverdue ? 'overdue' : ''}" data-type="${task.type}" data-id="${task.id}">
                     <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
-                    <span class="task-name">${this.escapeHtml(task.text || task.name)}</span>
+                    <span class="task-name">${this.escapeHtml(task.displayName || task.title || task.name || '(無題)')}</span>
                 </div>
             `;
         });
