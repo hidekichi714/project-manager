@@ -561,12 +561,19 @@ Google Calendar API のセットアップが必要です：
             let update = {};
 
             if (isAllDay) {
-                update.start = { date: newStart };
-                update.end = { date: newEnd };
+                // 終日イベント - YYYY-MM-DD形式のみ使用
+                const startDate = newStart.split('T')[0];
+                const endDate = newEnd.split('T')[0];
+                update.start = { date: startDate };
+                update.end = { date: endDate };
             } else {
-                update.start = { dateTime: newStart, timeZone: 'Asia/Tokyo' };
-                update.end = { dateTime: newEnd, timeZone: 'Asia/Tokyo' };
+                // 時間指定イベント - ISO 8601形式で送信
+                // toISOString()はUTC時間を返すので、そのまま使用
+                update.start = { dateTime: newStart, timeZone: 'UTC' };
+                update.end = { dateTime: newEnd, timeZone: 'UTC' };
             }
+
+            console.log('updateEvent params:', { eventId, calendarId, update });
 
             const response = await gapi.client.calendar.events.patch({
                 calendarId: calendarId || 'primary',
