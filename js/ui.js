@@ -42,6 +42,7 @@ const UI = {
             dailyView: document.getElementById('dailyView'),
             listView: document.getElementById('listView'),
             priorityView: document.getElementById('priorityView'),
+            projectList: document.getElementById('projectList'),
 
             // Priority Nav
             navEisenhower: document.getElementById('navEisenhower'),
@@ -223,8 +224,13 @@ const UI = {
             const input = document.getElementById('quickAddInput');
             const text = input?.value?.trim();
             if (text && typeof ToDo !== 'undefined') {
-                ToDo.add({ text: text, dueDate: new Date().toISOString().split('T')[0] });
+                ToDo.saveTodo({
+                    title: text,
+                    dueDate: new Date().toISOString().split('T')[0],
+                    priority: 'medium'
+                });
                 input.value = '';
+                ToDo.render();
                 this.renderDueTasks();
                 this.showToast('タスクを追加しました', 'success');
             }
