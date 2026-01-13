@@ -265,8 +265,15 @@ const UI = {
         // Quick Add Calendar Selector - populate from Google Calendar
         this.populateQuickAddCalendar();
 
-        // Initial render of due tasks
+        // Initial render of due tasks and archive
         this.renderDueTasks();
+        this.renderArchive();
+
+        // Archive toggle
+        document.getElementById('archiveToggle')?.addEventListener('click', () => {
+            const section = document.querySelector('.archive-section');
+            section?.classList.toggle('collapsed');
+        });
     },
 
     // Date navigation common handler
@@ -939,10 +946,18 @@ const UI = {
         // ToDoから取得
         if (typeof ToDo !== 'undefined') {
             const todos = ToDo.getAll?.() || JSON.parse(localStorage.getItem('pm_todos') || '[]');
-            dueTasks = dueTasks.concat(
-                todos.filter(t => !t.completed && t.dueDate && t.dueDate <= today)
-                    .map(t => ({ ...t, type: 'todo', displayName: t.title }))
-            );
+            todos.forEach(t => {
+                if (t.completed) {
+                    // 完了済みタスク: 期日前完了は表示（横線）、期日後完了は非表示
+                    const completedOnTime = t.dueDate && t.completedAt && t.completedAt.split('T')[0] <= t.dueDate;
+                    if (completedOnTime) {
+                        dueTasks.push({ ...t, type: 'todo', displayName: t.title, completedOnTime: true });
+                    }
+                } else if (t.dueDate && t.dueDate <= today) {
+                    // 未完了で期限内/過ぎたタスク
+                    dueTasks.push({ ...t, type: 'todo', displayName: t.title });
+                }
+            });
         }
 
         // プロジェクトのサブタスクから取得
@@ -965,11 +980,14 @@ const UI = {
 
         let html = '';
         dueTasks.slice(0, 10).forEach(task => {
-            const isOverdue = (task.dueDate && task.dueDate < today) || (task.endDate && task.endDate < today);
+            const isOverdue = !task.completed && ((task.dueDate && task.dueDate < today) || (task.endDate && task.endDate < today));
+            const isCompleted = task.completed || task.completedOnTime;
             html += `
-                <div class="due-task-item ${isOverdue ? 'overdue' : ''}" data-type="${task.type}" data-id="${task.id}">
-                    <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
-                    <span class="task-name">${this.escapeHtml(task.displayName || task.title || task.name || '(無題)')}</span>
+                <div class="due-task-item ${isOverdue ? 'overdue' : ''} ${isCompleted ? 'completed' : ''}" 
+                     data-type="${task.type}" data-id="${task.id}">
+                    <input type="checkbox" class="task-checkbox" ${isCompleted ? 'checked' : ''}>
+                    <span class="task-name ${isCompleted ? 'strikethrough' : ''}">${this.escapeHtml(task.displayName || task.title || task.name || '(無題)')}</span>
+                    ${!isCompleted ? `<input type="date" class="task-due-edit" value="${task.dueDate || ''}" title="期限を変更">` : ''}
                 </div>
             `;
         });
@@ -984,7 +1002,7 @@ const UI = {
                 const type = item.dataset.type;
 
                 if (type === 'todo' && typeof ToDo !== 'undefined') {
-                    ToDo.toggle(id);
+                    ToDo.toggleComplete(id);
                 } else if (type === 'subtask' && typeof Storage !== 'undefined') {
                     const task = Storage.getTask(id);
                     if (task) {
@@ -995,5 +1013,80 @@ const UI = {
                 this.renderDueTasks();
             });
         });
+
+        // 期限変更のイベント
+        container.querySelectorAll('.task-due-edit').forEach(dateInput => {
+            dateInput.addEventListener('change', (e) => {
+                const item = e.target.closest('.due-task-item');
+                const id = item.dataset.id;
+                const type = item.dataset.type;
+                const newDate = e.target.value;
+
+                if (type === 'todo' && typeof ToDo !== 'undefined') {
+                    const todos = ToDo.getAll();
+                    const todo = todos.find(t => t.id === id);
+                    if (todo) {
+                        todo.dueDate = newDate;
+                        ToDo.saveTodo(todo);
+                        this.showToast('期限を更新しました', 'success');
+                        ToDo.render();
+                        this.renderDueTasks();
+                    }
+                }
+            });
+        });
+    },
+
+    // アーカイブ（完了済みタスク）を表示
+    renderArchive() {
+        const container = document.getElementById('archiveList');
+        if (!container) return;
+
+        let archivedTasks = [];
+
+        // 完了したToDoを取得
+        if (typeof ToDo !== 'undefined') {
+            const todos = ToDo.getAll?.() || JSON.parse(localStorage.getItem('pm_todos') || '[]');
+            archivedTasks = archivedTasks.concat(
+                todos.filter(t => t.completed && t.completedAt)
+                    .map(t => ({
+                        ...t,
+                        type: 'todo',
+                        displayName: t.title,
+                        completedDate: t.completedAt?.split('T')[0] || ''
+                    }))
+            );
+        }
+
+        // 完了日でソート（新しい順）
+        archivedTasks.sort((a, b) => {
+            if (!a.completedDate || !b.completedDate) return 0;
+            return b.completedDate.localeCompare(a.completedDate);
+        });
+
+        if (archivedTasks.length === 0) {
+            container.innerHTML = '<div class="due-task-empty">完了タスクはありません</div>';
+            return;
+        }
+
+        let html = '';
+        archivedTasks.slice(0, 20).forEach(task => {
+            const dateStr = task.completedDate ? this.formatDateShort(task.completedDate) : '';
+            html += `
+                <div class="archive-item">
+                    <span class="archive-title">${this.escapeHtml(task.displayName || task.title || '(無題)')}</span>
+                    <span class="archive-date">${dateStr}</span>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    },
+
+    // 日付フォーマット
+    formatDateShort(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return `${date.getMonth() + 1}/${date.getDate()}`;
     }
 };

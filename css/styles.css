@@ -439,11 +439,76 @@ textarea {
     color: var(--color-danger);
 }
 
+.due-task-item.completed {
+    opacity: 0.6;
+}
+
+.due-task-item .task-name.strikethrough {
+    text-decoration: line-through;
+    color: var(--color-text-muted);
+}
+
+.due-task-item .task-due-edit {
+    width: 110px;
+    padding: 4px 6px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    background: var(--color-bg-secondary);
+    margin-left: auto;
+}
+
 .due-task-empty {
     color: var(--color-text-muted);
     font-size: 0.8rem;
     text-align: center;
     padding: var(--spacing-md);
+}
+
+/* Archive Section */
+.archive-section .section-header {
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.archive-section .toggle-icon {
+    font-size: 0.7rem;
+    transition: transform var(--transition-fast);
+}
+
+.archive-section:not(.collapsed) .toggle-icon {
+    transform: rotate(90deg);
+}
+
+.archive-section.collapsed .archive-list {
+    display: none;
+}
+
+.archive-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.archive-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: 6px var(--spacing-sm);
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.archive-item .archive-date {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    margin-left: auto;
+}
+
+.archive-item .archive-title {
+    text-decoration: line-through;
 }
 
 /* Quick Add Section */
@@ -489,6 +554,12 @@ textarea {
     background: var(--color-accent-secondary);
 }
 
+.quick-add-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
 .quick-add-row {
     display: flex;
     gap: var(--spacing-sm);
@@ -496,27 +567,18 @@ textarea {
 
 .quick-add-options {
     display: flex;
-    gap: var(--spacing-sm);
-    margin-top: var(--spacing-sm);
+    flex-direction: column;
+    gap: var(--spacing-xs);
 }
 
-.quick-add-date {
-    flex: 1;
-    padding: 6px var(--spacing-sm);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    font-size: 0.8rem;
-    background: var(--color-bg-secondary);
-}
-
+.quick-add-date,
 .quick-add-calendar {
-    flex: 1;
-    padding: 6px var(--spacing-sm);
+    width: 100%;
+    padding: 8px var(--spacing-sm);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     background: var(--color-bg-secondary);
-    cursor: pointer;
 }
 
 .category-list {
