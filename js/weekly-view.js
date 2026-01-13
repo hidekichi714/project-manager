@@ -125,12 +125,19 @@ const WeeklyView = {
         if (typeof ToDo === 'undefined') return [];
 
         const todos = ToDo.getAll();
+        const weekEndDate = new Date(weekEnd);
+        weekEndDate.setHours(23, 59, 59, 999);
+
+        console.log('getWeekTodos - weekEnd:', weekEnd, 'weekEndDate:', weekEndDate.toISOString());
+
         return todos.filter(todo => {
             if (todo.completed) return false;
             if (!todo.dueDate) return true; // 期限なしも表示
             const due = new Date(todo.dueDate);
-            due.setHours(23, 59, 59);
-            return due <= weekEnd;
+            due.setHours(23, 59, 59, 999);
+            const result = due <= weekEndDate;
+            console.log('Todo:', todo.title, 'dueDate:', todo.dueDate, 'due:', due.toISOString(), 'included:', result);
+            return result;
         });
     },
 
