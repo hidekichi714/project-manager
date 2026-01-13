@@ -143,6 +143,8 @@ const WeeklyView = {
 
     // ToDoパネルをレンダリング
     renderTodoPanel(todos, weekEnd) {
+        const today = new Date().toISOString().split('T')[0];
+
         let html = '<div class="weekly-todo-panel">';
         html += '<h3 class="weekly-todo-title">📋 今週のタスク</h3>';
         html += `<p class="weekly-todo-subtitle">${this.formatDateShort(weekEnd)}までの期限</p>`;
@@ -153,16 +155,20 @@ const WeeklyView = {
         } else {
             todos.forEach(todo => {
                 const dueText = todo.dueDate ? ToDo.formatDueDate(todo.dueDate) : '期限なし';
+                const isCompleted = todo.completed;
+                const isOverdue = !isCompleted && todo.dueDate && todo.dueDate < today;
+
                 html += `
-                    <div class="weekly-todo-item draggable-todo" 
-                         draggable="true"
+                    <div class="weekly-todo-item ${isCompleted ? 'completed' : ''} ${isOverdue ? 'overdue' : ''} draggable-todo" 
+                         draggable="${!isCompleted}"
                          data-todo-id="${todo.id}"
                          data-todo-title="${UI.escapeHtml(todo.title)}"
                          data-todo-date="${todo.dueDate || ''}">
+                        <input type="checkbox" class="todo-checkbox" ${isCompleted ? 'checked' : ''}>
                         <span class="todo-priority-dot ${todo.priority}"></span>
                         <div class="todo-info">
-                            <span class="todo-name">${UI.escapeHtml(todo.title)}</span>
-                            <span class="todo-due">${dueText}</span>
+                            <span class="todo-name ${isCompleted ? 'strikethrough' : ''}">${UI.escapeHtml(todo.title)}</span>
+                            ${!isCompleted ? `<input type="date" class="todo-date-edit" value="${todo.dueDate || ''}" title="期限を変更">` : `<span class="todo-due">${dueText}</span>`}
                         </div>
                     </div>
                 `;
@@ -553,6 +559,46 @@ const WeeklyView = {
             });
         });
 
+        // 週間パネルのチェックボックスイベント
+        document.querySelectorAll('.weekly-todo-item .todo-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                e.stopPropagation();
+                const item = e.target.closest('.weekly-todo-item');
+                const id = item.dataset.todoId;
+                if (typeof ToDo !== 'undefined') {
+                    ToDo.toggleComplete(id);
+                    this.renderWeekly();
+                    if (typeof UI !== 'undefined') {
+                        UI.renderDueTasks();
+                        UI.renderArchive();
+                    }
+                }
+            });
+        });
+
+        // 週間パネルの日付編集イベント
+        document.querySelectorAll('.weekly-todo-item .todo-date-edit').forEach(dateInput => {
+            dateInput.addEventListener('change', (e) => {
+                e.stopPropagation();
+                const item = e.target.closest('.weekly-todo-item');
+                const id = item.dataset.todoId;
+                const newDate = e.target.value;
+                if (typeof ToDo !== 'undefined') {
+                    const todos = ToDo.getAll();
+                    const todo = todos.find(t => t.id === id);
+                    if (todo) {
+                        todo.dueDate = newDate;
+                        ToDo.saveTodo(todo);
+                        this.renderWeekly();
+                        if (typeof UI !== 'undefined') {
+                            UI.showToast('期限を更新しました', 'success');
+                            UI.renderDueTasks();
+                        }
+                    }
+                }
+            });
+        });
+
         // ドラッグ&ドロップハンドラー
         this.bindDragDrop();
 
@@ -618,6 +664,8 @@ const WeeklyView = {
                     const column = slot.closest('.weekly-day-column, .daily-events-column');
                     const dateStr = column?.dataset?.date || this.formatDate(this.currentDate);
 
+                    console.log('Drop handler - data:', data, 'hour:', hour, 'dateStr:', dateStr);
+
                     if (data.isAllDay) {
                         // 終日イベントを30分の時間指定イベントに変換
                         const startDate = new Date(`${dateStr}T${String(hour).padStart(2, '0')}:00:00`);
@@ -627,13 +675,19 @@ const WeeklyView = {
                         const startDateTime = startDate.toISOString();
                         const endDateTime = endDate.toISOString();
 
-                        await GoogleCalendar.updateEvent(
+                        console.log('All-day to timed conversion:', { startDateTime, endDateTime });
+
+                        const result = await GoogleCalendar.updateEvent(
                             data.eventId,
                             data.calendarId,
                             startDateTime,
                             endDateTime,
                             false // 終日から時間指定へ変換
                         );
+
+                        if (!result) {
+                            UI.showToast('予定の移動に失敗しました', 'error');
+                        }
                     } else {
                         // 時間指定イベントを移動
                         const startDate = new Date(`${dateStr}T${String(hour).padStart(2, '0')}:00:00`);
@@ -660,227 +714,229 @@ const WeeklyView = {
                     }
                 } catch (error) {
                     console.error('Drag drop error:', error);
+                    UI.showToast('移動できませんでした: ' + (error.message || 'エラー'), 'error');
                 }
-            });
-        });
-
-        // ToDoドラッグハンドラー
-        this.bindTodoDrag();
-    },
-
-    bindTodoDrag() {
-        document.querySelectorAll('.draggable-todo').forEach(el => {
-            el.addEventListener('dragstart', (e) => {
-                e.dataTransfer.setData('text/plain', JSON.stringify({
-                    type: 'todo',
-                    todoId: el.dataset.todoId,
-                    title: el.dataset.todoTitle,
-                    date: el.dataset.todoDate
-                }));
-                el.classList.add('dragging');
-            });
-
-            el.addEventListener('dragend', () => {
-                el.classList.remove('dragging');
-            });
-        });
-
-        // 日付カラムへのドロップを追加
-        document.querySelectorAll('.weekly-day-column, .daily-events-column').forEach(column => {
-            column.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                column.classList.add('drop-target');
-            });
-
-            column.addEventListener('dragleave', () => {
-                column.classList.remove('drop-target');
-            });
-
-            column.addEventListener('drop', async (e) => {
-                e.preventDefault();
-                column.classList.remove('drop-target');
-
-                try {
-                    const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-
-                    // ToDoをGoogle Calendarに登録
-                    if (data.type === 'todo' && typeof GoogleCalendar !== 'undefined' && GoogleCalendar.connected) {
-                        const dateStr = column.dataset.date;
-
-                        await GoogleCalendar.createEvent({
-                            title: data.title,
-                            allDay: true,
-                            startDate: dateStr,
-                            endDate: dateStr,
-                            description: 'ToDoから登録'
-                        });
-
-                        UI.showToast('Google Calendarに予定を追加しました', 'success');
-                        const activeView = document.querySelector('.view-container:not(.hidden)')?.id;
-                        if (activeView === 'weeklyView') {
-                            this.renderWeekly();
-                        } else {
-                            this.renderDaily();
-                        }
-                    }
-                } catch (error) {
-                    console.error('Todo drop error:', error);
-                }
-            });
-        });
-    },
-
-    // リサイズ機能の初期化
-    initResize() {
-        const container = document.querySelector('.main-content');
-        if (!container) return;
-
-        container.addEventListener('mousedown', (e) => {
-            const handle = e.target.closest('.event-resize-handle');
-            if (!handle) return;
-
-            e.preventDefault();
-            e.stopPropagation();
-
-            const eventBlock = handle.closest('.weekly-event, .daily-event');
-            if (!eventBlock) return;
-
-            const isTop = handle.classList.contains('event-resize-top');
-
-            this.resizeState = {
-                isResizing: true,
-                type: isTop ? 'top' : 'bottom',
-                eventId: eventBlock.dataset.eventId,
-                calendarId: eventBlock.dataset.calendarId,
-                originalY: e.clientY,
-                originalTop: parseInt(eventBlock.style.top) || 0,
-                originalHeight: parseInt(eventBlock.style.height) || 0,
-                element: eventBlock,
-                duration: parseInt(eventBlock.dataset.duration) || 60
-            };
-
-            eventBlock.classList.add('resizing');
-
-            // マウス移動と終了のイベントを登録
-            const moveHandler = (moveEvent) => this.handleResizeMove(moveEvent);
-            const upHandler = () => {
-                this.handleResizeEnd();
-                window.removeEventListener('mousemove', moveHandler);
-                window.removeEventListener('mouseup', upHandler);
-            };
-
-            window.addEventListener('mousemove', moveHandler);
-            window.addEventListener('mouseup', upHandler);
-        });
-    },
-
-    handleResizeMove(e) {
-        if (!this.resizeState.isResizing) return;
-
-        const deltaY = e.clientY - this.resizeState.originalY;
-        const { type, originalTop, originalHeight, element } = this.resizeState;
-        const slotHeight = this.config.slotHeight;
-
-        if (type === 'bottom') {
-            const newHeight = Math.max(slotHeight / 4, originalHeight + deltaY);
-            element.style.height = `${newHeight}px`;
-        } else if (type === 'top') {
-            const newTop = originalTop + deltaY;
-            const newHeight = Math.max(slotHeight / 4, originalHeight - deltaY);
-
-            if (newHeight > slotHeight / 4) {
-                element.style.top = `${newTop}px`;
-                element.style.height = `${newHeight}px`;
             }
-        }
+            });
+    });
+
+// ToDoドラッグハンドラー
+this.bindTodoDrag();
     },
+
+bindTodoDrag() {
+    document.querySelectorAll('.draggable-todo').forEach(el => {
+        el.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', JSON.stringify({
+                type: 'todo',
+                todoId: el.dataset.todoId,
+                title: el.dataset.todoTitle,
+                date: el.dataset.todoDate
+            }));
+            el.classList.add('dragging');
+        });
+
+        el.addEventListener('dragend', () => {
+            el.classList.remove('dragging');
+        });
+    });
+
+    // 日付カラムへのドロップを追加
+    document.querySelectorAll('.weekly-day-column, .daily-events-column').forEach(column => {
+        column.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            column.classList.add('drop-target');
+        });
+
+        column.addEventListener('dragleave', () => {
+            column.classList.remove('drop-target');
+        });
+
+        column.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            column.classList.remove('drop-target');
+
+            try {
+                const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+
+                // ToDoをGoogle Calendarに登録
+                if (data.type === 'todo' && typeof GoogleCalendar !== 'undefined' && GoogleCalendar.connected) {
+                    const dateStr = column.dataset.date;
+
+                    await GoogleCalendar.createEvent({
+                        title: data.title,
+                        allDay: true,
+                        startDate: dateStr,
+                        endDate: dateStr,
+                        description: 'ToDoから登録'
+                    });
+
+                    UI.showToast('Google Calendarに予定を追加しました', 'success');
+                    const activeView = document.querySelector('.view-container:not(.hidden)')?.id;
+                    if (activeView === 'weeklyView') {
+                        this.renderWeekly();
+                    } else {
+                        this.renderDaily();
+                    }
+                }
+            } catch (error) {
+                console.error('Todo drop error:', error);
+            }
+        });
+    });
+},
+
+// リサイズ機能の初期化
+initResize() {
+    const container = document.querySelector('.main-content');
+    if (!container) return;
+
+    container.addEventListener('mousedown', (e) => {
+        const handle = e.target.closest('.event-resize-handle');
+        if (!handle) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const eventBlock = handle.closest('.weekly-event, .daily-event');
+        if (!eventBlock) return;
+
+        const isTop = handle.classList.contains('event-resize-top');
+
+        this.resizeState = {
+            isResizing: true,
+            type: isTop ? 'top' : 'bottom',
+            eventId: eventBlock.dataset.eventId,
+            calendarId: eventBlock.dataset.calendarId,
+            originalY: e.clientY,
+            originalTop: parseInt(eventBlock.style.top) || 0,
+            originalHeight: parseInt(eventBlock.style.height) || 0,
+            element: eventBlock,
+            duration: parseInt(eventBlock.dataset.duration) || 60
+        };
+
+        eventBlock.classList.add('resizing');
+
+        // マウス移動と終了のイベントを登録
+        const moveHandler = (moveEvent) => this.handleResizeMove(moveEvent);
+        const upHandler = () => {
+            this.handleResizeEnd();
+            window.removeEventListener('mousemove', moveHandler);
+            window.removeEventListener('mouseup', upHandler);
+        };
+
+        window.addEventListener('mousemove', moveHandler);
+        window.addEventListener('mouseup', upHandler);
+    });
+},
+
+handleResizeMove(e) {
+    if (!this.resizeState.isResizing) return;
+
+    const deltaY = e.clientY - this.resizeState.originalY;
+    const { type, originalTop, originalHeight, element } = this.resizeState;
+    const slotHeight = this.config.slotHeight;
+
+    if (type === 'bottom') {
+        const newHeight = Math.max(slotHeight / 4, originalHeight + deltaY);
+        element.style.height = `${newHeight}px`;
+    } else if (type === 'top') {
+        const newTop = originalTop + deltaY;
+        const newHeight = Math.max(slotHeight / 4, originalHeight - deltaY);
+
+        if (newHeight > slotHeight / 4) {
+            element.style.top = `${newTop}px`;
+            element.style.height = `${newHeight}px`;
+        }
+    }
+},
 
     async handleResizeEnd() {
-        if (!this.resizeState.isResizing) return;
+    if (!this.resizeState.isResizing) return;
 
-        const { element, eventId, calendarId } = this.resizeState;
-        element.classList.remove('resizing');
-        this.resizeState.isResizing = false;
+    const { element, eventId, calendarId } = this.resizeState;
+    element.classList.remove('resizing');
+    this.resizeState.isResizing = false;
 
-        const top = parseInt(element.style.top) || 0;
-        const height = parseInt(element.style.height) || 0;
-        const slotHeight = this.config.slotHeight;
-        const startHour = this.config.startHour;
+    const top = parseInt(element.style.top) || 0;
+    const height = parseInt(element.style.height) || 0;
+    const slotHeight = this.config.slotHeight;
+    const startHour = this.config.startHour;
 
-        // 新しい開始時間と終了時間を計算
-        const startMinutesTotal = (top / slotHeight) * 60;
-        const durationMinutes = (height / slotHeight) * 60;
+    // 新しい開始時間と終了時間を計算
+    const startMinutesTotal = (top / slotHeight) * 60;
+    const durationMinutes = (height / slotHeight) * 60;
 
-        const startH = Math.floor(startMinutesTotal / 60) + startHour;
-        const startM = Math.round((startMinutesTotal % 60) / 15) * 15; // 15分単位にスナップ
+    const startH = Math.floor(startMinutesTotal / 60) + startHour;
+    const startM = Math.round((startMinutesTotal % 60) / 15) * 15; // 15分単位にスナップ
 
-        const column = element.closest('.weekly-day-column, .daily-events-column');
-        const dateStr = column?.dataset?.date || this.formatDate(this.currentDate);
+    const column = element.closest('.weekly-day-column, .daily-events-column');
+    const dateStr = column?.dataset?.date || this.formatDate(this.currentDate);
 
-        const newStart = new Date(`${dateStr}T${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}:00`);
-        const newEnd = new Date(newStart.getTime() + durationMinutes * 60000);
+    const newStart = new Date(`${dateStr}T${String(startH).padStart(2, '0')}:${String(startM).padStart(2, '0')}:00`);
+    const newEnd = new Date(newStart.getTime() + durationMinutes * 60000);
 
-        try {
-            await GoogleCalendar.updateEvent(
-                eventId,
-                calendarId,
-                newStart.toISOString(),
-                newEnd.toISOString(),
-                false
-            );
-            UI.showToast('予定の期間を更新しました', 'success');
-        } catch (error) {
-            console.error('Resize update error:', error);
-            UI.showToast('予定の更新に失敗しました', 'warning');
-        }
-
-        // ビュー再描画
-        const activeView = document.querySelector('.view-container:not(.hidden)')?.id;
-        if (activeView === 'weeklyView') {
-            this.renderWeekly();
-        } else {
-            this.renderDaily();
-        }
-    },
-
-    // ユーティリティ
-    formatDate(date) {
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
-    },
-
-    formatDateShort(date) {
-        return `${date.getMonth() + 1}/${date.getDate()}`;
-    },
-
-    formatTime(input) {
-        // Dateオブジェクトの場合
-        if (input instanceof Date) {
-            const h = input.getHours();
-            const m = input.getMinutes();
-            return `${h}:${m.toString().padStart(2, '0')}`;
-        }
-        // 数値（分）の場合
-        const h = Math.floor(input / 60);
-        const m = input % 60;
-        return `${h}:${m.toString().padStart(2, '0')}`;
-    },
-
-    // 日付フォーマット (範囲用)
-    formatDateRange(date) {
-        return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
-    },
-
-    // 週番号を取得
-    getWeekNumber(date) {
-        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-        const dayNum = d.getUTCDay() || 7;
-        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-        return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    try {
+        await GoogleCalendar.updateEvent(
+            eventId,
+            calendarId,
+            newStart.toISOString(),
+            newEnd.toISOString(),
+            false
+        );
+        UI.showToast('予定の期間を更新しました', 'success');
+    } catch (error) {
+        console.error('Resize update error:', error);
+        UI.showToast('予定の更新に失敗しました', 'warning');
     }
+
+    // ビュー再描画
+    const activeView = document.querySelector('.view-container:not(.hidden)')?.id;
+    if (activeView === 'weeklyView') {
+        this.renderWeekly();
+    } else {
+        this.renderDaily();
+    }
+},
+
+// ユーティリティ
+formatDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+},
+
+formatDateShort(date) {
+    return `${date.getMonth() + 1}/${date.getDate()}`;
+},
+
+formatTime(input) {
+    // Dateオブジェクトの場合
+    if (input instanceof Date) {
+        const h = input.getHours();
+        const m = input.getMinutes();
+        return `${h}:${m.toString().padStart(2, '0')}`;
+    }
+    // 数値（分）の場合
+    const h = Math.floor(input / 60);
+    const m = input % 60;
+    return `${h}:${m.toString().padStart(2, '0')}`;
+},
+
+// 日付フォーマット (範囲用)
+formatDateRange(date) {
+    return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+},
+
+// 週番号を取得
+getWeekNumber(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
 };
 
 // 初期化

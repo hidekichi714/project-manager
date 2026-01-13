@@ -987,7 +987,6 @@ const UI = {
                      data-type="${task.type}" data-id="${task.id}">
                     <input type="checkbox" class="task-checkbox" ${isCompleted ? 'checked' : ''}>
                     <span class="task-name ${isCompleted ? 'strikethrough' : ''}">${this.escapeHtml(task.displayName || task.title || task.name || '(無題)')}</span>
-                    ${!isCompleted ? `<input type="date" class="task-due-edit" value="${task.dueDate || ''}" title="期限を変更">` : ''}
                 </div>
             `;
         });
