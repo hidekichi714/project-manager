@@ -538,33 +538,10 @@ const WeeklyView = {
                 e.stopPropagation();
                 const eventId = el.dataset.eventId;
                 const calendarId = el.dataset.calendarId || 'primary';
-                const eventTitle = el.querySelector('.event-title')?.textContent || '予定';
 
-                // 選択ダイアログ
-                const action = prompt(
-                    `「${eventTitle}」\n\n操作を選択してください:\n1 = 編集\n2 = 削除\nキャンセル = 何もしない`,
-                    '1'
-                );
-
-                if (action === '1') {
-                    // 編集モーダルを開く
-                    if (typeof GoogleCalendar !== 'undefined') {
-                        GoogleCalendar.openEditEventModal(eventId, calendarId);
-                    }
-                } else if (action === '2') {
-                    // 削除
-                    if (confirm('本当に削除しますか？')) {
-                        if (typeof GoogleCalendar !== 'undefined') {
-                            GoogleCalendar.deleteEvent(eventId, calendarId).then(() => {
-                                const activeView = document.querySelector('.view-container:not(.hidden)')?.id;
-                                if (activeView === 'weeklyView') {
-                                    this.renderWeekly();
-                                } else if (activeView === 'dailyView') {
-                                    this.renderDaily();
-                                }
-                            });
-                        }
-                    }
+                // 直接編集モーダルを開く
+                if (typeof GoogleCalendar !== 'undefined') {
+                    GoogleCalendar.openEditEventModal(eventId, calendarId);
                 }
             });
         });

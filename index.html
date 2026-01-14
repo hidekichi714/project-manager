@@ -523,8 +523,11 @@
                     <textarea id="googleEventDescription" rows="3" placeholder="予定の詳細"></textarea>
                 </div>
                 <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="googleEventCancel">キャンセル</button>
-                    <button type="submit" class="btn-primary">追加</button>
+                    <button type="button" class="btn-danger hidden" id="googleEventDelete">🗑️ 削除</button>
+                    <div class="form-actions-right">
+                        <button type="button" class="btn-secondary" id="googleEventCancel">キャンセル</button>
+                        <button type="submit" class="btn-primary" id="googleEventSubmit">追加</button>
+                    </div>
                 </div>
             </form>
         </div>

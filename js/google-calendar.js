@@ -391,6 +391,12 @@ Google Calendar API のセットアップが必要です：
             const modalTitle = modal.querySelector('.modal-title');
             if (modalTitle) modalTitle.textContent = '📝 予定を編集';
 
+            // 編集モード時は削除ボタンを表示、ボタンテキストを「更新」に変更
+            const deleteBtn = document.getElementById('googleEventDelete');
+            const submitBtn = document.getElementById('googleEventSubmit');
+            if (deleteBtn) deleteBtn.classList.remove('hidden');
+            if (submitBtn) submitBtn.textContent = '更新';
+
             modal.classList.add('active');
         } catch (error) {
             console.error('イベント取得エラー:', error);
@@ -775,7 +781,28 @@ Google Calendar API のセットアップが必要です：
     },
 
     closeEventModal() {
-        document.getElementById('googleEventModal')?.classList.remove('active');
+        const modal = document.getElementById('googleEventModal');
+        if (!modal) return;
+
+        modal.classList.remove('active');
+
+        // 編集モードをリセット
+        modal.dataset.editMode = 'false';
+        delete modal.dataset.eventId;
+        delete modal.dataset.calendarId;
+
+        // 削除ボタンを非表示に戻す
+        const deleteBtn = document.getElementById('googleEventDelete');
+        const submitBtn = document.getElementById('googleEventSubmit');
+        if (deleteBtn) deleteBtn.classList.add('hidden');
+        if (submitBtn) submitBtn.textContent = '追加';
+
+        // タイトルを元に戻す
+        const modalTitle = modal.querySelector('.modal-title');
+        if (modalTitle) modalTitle.textContent = '📅 Googleカレンダーに予定追加';
+
+        // フォームをリセット
+        document.getElementById('googleEventForm')?.reset();
     },
 
     toggleTimeFields(isAllDay) {
@@ -848,6 +875,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('googleEventCancel')?.addEventListener('click', () => {
         GoogleCalendar.closeEventModal();
+    });
+
+    // 削除ボタン
+    document.getElementById('googleEventDelete')?.addEventListener('click', () => {
+        const modal = document.getElementById('googleEventModal');
+        if (!modal || modal.dataset.editMode !== 'true') return;
+
+        const eventId = modal.dataset.eventId;
+        const calendarId = modal.dataset.calendarId || 'primary';
+
+        if (confirm('この予定を削除しますか？')) {
+            GoogleCalendar.deleteEvent(eventId, calendarId).then(() => {
+                GoogleCalendar.closeEventModal();
+                // ビュー更新
+                const activeView = document.querySelector('.view-container:not(.hidden)')?.id;
+                if (activeView === 'weeklyView' && typeof WeeklyView !== 'undefined') {
+                    WeeklyView.renderWeekly();
+                } else if (activeView === 'dailyView' && typeof WeeklyView !== 'undefined') {
+                    WeeklyView.renderDaily();
+                } else if (activeView === 'calendarView' && typeof Calendar !== 'undefined') {
+                    Calendar.render();
+                }
+            });
+        }
     });
 
     // 終日トグル
