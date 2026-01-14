@@ -186,9 +186,11 @@ const WeeklyView = {
         let html = '<div class="weekly-header"><div class="weekly-time-gutter"></div>';
         days.forEach(day => {
             const isToday = day.toDateString() === today.toDateString();
-            const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+            const dayOfWeek = day.getDay();
+            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+            const dayClass = dayOfWeek === 6 ? 'saturday' : (dayOfWeek === 0 ? 'sunday' : '');
             html += `
-                <div class="weekly-day-header ${isToday ? 'today' : ''} ${isWeekend ? 'weekend' : ''}">
+                <div class="weekly-day-header ${isToday ? 'today' : ''} ${isWeekend ? 'weekend' : ''} ${dayClass}">
                     <span class="day-name">${dayNames[day.getDay()]}</span>
                     <span class="day-number">${day.getDate()}</span>
                 </div>
@@ -267,9 +269,11 @@ const WeeklyView = {
 
             const today = new Date();
             const isToday = day.toDateString() === today.toDateString();
-            const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+            const dayOfWeek = day.getDay();
+            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+            const dayClass = dayOfWeek === 6 ? 'saturday' : (dayOfWeek === 0 ? 'sunday' : '');
 
-            html += `<div class="weekly-day-column ${isToday ? 'today' : ''} ${isWeekend ? 'weekend' : ''}" data-date="${dayStr}">`;
+            html += `<div class="weekly-day-column ${isToday ? 'today' : ''} ${isWeekend ? 'weekend' : ''} ${dayClass}" data-date="${dayStr}">`;
 
             // 時間スロット
             hours.forEach(hour => {

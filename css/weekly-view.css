@@ -22,6 +22,8 @@
 
 .weekly-day-header {
     flex: 1;
+    min-width: 0;
+    max-width: calc((100% - 72px) / 7);
     padding: var(--spacing-md) 0;
     text-align: center;
     border-left: 1px solid var(--border-color);
@@ -33,6 +35,22 @@
 
 .weekly-day-header.weekend {
     background: #F8FAFC;
+}
+
+.weekly-day-header.saturday {
+    background: rgba(59, 130, 246, 0.08);
+}
+
+.weekly-day-header.saturday .day-name {
+    color: #3B82F6;
+}
+
+.weekly-day-header.sunday {
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.weekly-day-header.sunday .day-name {
+    color: #EF4444;
 }
 
 .weekly-day-header .day-name {
@@ -85,12 +103,21 @@
 
 .weekly-day-column {
     flex: 1;
+    min-width: 0;
     position: relative;
     border-left: 1px solid var(--border-color);
 }
 
 .weekly-day-column.today {
     background: var(--color-accent-light);
+}
+
+.weekly-day-column.saturday {
+    background: rgba(59, 130, 246, 0.04);
+}
+
+.weekly-day-column.sunday {
+    background: rgba(239, 68, 68, 0.04);
 }
 
 .weekly-hour-slot {

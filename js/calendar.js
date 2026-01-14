@@ -69,7 +69,8 @@ const Calendar = {
     renderHeader() {
         return this.dayNames.map((day, index) => {
             const isWeekend = index === 0 || index === 6;
-            return `<div class="calendar-header-cell ${isWeekend ? 'weekend' : ''}">${day}</div>`;
+            const dayClass = index === 6 ? 'saturday' : (index === 0 ? 'sunday' : '');
+            return `<div class="calendar-header-cell ${isWeekend ? 'weekend' : ''} ${dayClass}">${day}</div>`;
         }).join('');
     },
 
@@ -137,6 +138,8 @@ const Calendar = {
             if (!isCurrentMonth) classes += ' other-month';
             if (isToday) classes += ' today';
             if (isWeekend) classes += ' weekend';
+            if (date.getDay() === 6) classes += ' saturday';
+            if (date.getDay() === 0) classes += ' sunday';
             if (hasEvents) classes += ' has-events';
             if (hasGoogleEvents) classes += ' has-google-events';
 

@@ -66,6 +66,16 @@
     background: #F8FAFC;
 }
 
+.calendar-header-cell.saturday {
+    background: rgba(59, 130, 246, 0.08);
+    color: #3B82F6;
+}
+
+.calendar-header-cell.sunday {
+    background: rgba(239, 68, 68, 0.08);
+    color: #EF4444;
+}
+
 /* Calendar Day */
 .calendar-day {
     min-height: 140px;
@@ -98,6 +108,14 @@
 
 .calendar-day.weekend {
     background: #FAFAFA;
+}
+
+.calendar-day.saturday {
+    background: rgba(59, 130, 246, 0.04);
+}
+
+.calendar-day.sunday {
+    background: rgba(239, 68, 68, 0.04);
 }
 
 .day-number {
