@@ -356,6 +356,12 @@ Google Calendar API のセットアップが必要です：
             // 編集モード用にフォームを設定
             document.getElementById('googleEventTitle').value = event.summary || '';
 
+            // カレンダーセレクターに現在のカレンダーを設定
+            const calendarSelect = document.getElementById('googleEventCalendar');
+            if (calendarSelect) {
+                calendarSelect.value = calendarId;
+            }
+
             const isAllDay = !event.start.dateTime;
             document.getElementById('googleEventAllDay').checked = isAllDay;
 
