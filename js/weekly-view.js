@@ -665,14 +665,25 @@ const WeeklyView = {
 
                     console.log('Drop handler - data:', data, 'hour:', hour, 'dateStr:', dateStr);
 
+                    // 日本時間のオフセット付きフォーマットを生成するヘルパー関数
+                    const formatWithOffset = (date) => {
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        const hours = String(date.getHours()).padStart(2, '0');
+                        const minutes = String(date.getMinutes()).padStart(2, '0');
+                        const seconds = String(date.getSeconds()).padStart(2, '0');
+                        return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+09:00`;
+                    };
+
                     if (data.isAllDay) {
                         // 終日イベントを30分の時間指定イベントに変換
                         const startDate = new Date(`${dateStr}T${String(hour).padStart(2, '0')}:00:00`);
                         const endDate = new Date(startDate.getTime() + 30 * 60 * 1000); // 30分後
 
-                        // ISO形式に変換（タイムゾーン指定あり）
-                        const startDateTime = startDate.toISOString();
-                        const endDateTime = endDate.toISOString();
+                        // 日本時間オフセット付きフォーマット
+                        const startDateTime = formatWithOffset(startDate);
+                        const endDateTime = formatWithOffset(endDate);
 
                         console.log('All-day to timed conversion:', { startDateTime, endDateTime });
 
@@ -692,8 +703,9 @@ const WeeklyView = {
                         const startDate = new Date(`${dateStr}T${String(hour).padStart(2, '0')}:00:00`);
                         const endDate = new Date(startDate.getTime() + data.duration * 60 * 1000);
 
-                        const startDateTime = startDate.toISOString();
-                        const endDateTime = endDate.toISOString();
+                        // 日本時間オフセット付きフォーマット
+                        const startDateTime = formatWithOffset(startDate);
+                        const endDateTime = formatWithOffset(endDate);
 
                         await GoogleCalendar.updateEvent(
                             data.eventId,

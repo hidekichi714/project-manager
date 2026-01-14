@@ -573,16 +573,9 @@ Google Calendar API のセットアップが必要です：
                 update.end = { date: endDate };
             } else {
                 // 時間指定イベント
-                // Google Calendar API は RFC3339 形式を要求
-                // 終日イベントから時間指定イベントへの変換時は、dateフィールドを削除し、dateTimeフィールドを設定
-                update.start = {
-                    dateTime: newStart,
-                    timeZone: 'Asia/Tokyo'
-                };
-                update.end = {
-                    dateTime: newEnd,
-                    timeZone: 'Asia/Tokyo'
-                };
+                // 日時文字列にはオフセット（+09:00）が含まれているため、timeZoneは不要
+                update.start = { dateTime: newStart };
+                update.end = { dateTime: newEnd };
             }
 
             console.log('updateEvent params:', { eventId, calendarId, update, isAllDay });
