@@ -573,9 +573,15 @@ Google Calendar API のセットアップが必要です：
                 update.end = { date: endDate };
             } else {
                 // 時間指定イベント
-                // 日時文字列にはオフセット（+09:00）が含まれているため、timeZoneは不要
-                update.start = { dateTime: newStart };
-                update.end = { dateTime: newEnd };
+                // 終日イベントから変換する際は、dateフィールドを明示的にnullにする
+                update.start = {
+                    dateTime: newStart,
+                    date: null
+                };
+                update.end = {
+                    dateTime: newEnd,
+                    date: null
+                };
             }
 
             console.log('updateEvent params:', { eventId, calendarId, update, isAllDay });
