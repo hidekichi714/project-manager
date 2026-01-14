@@ -275,6 +275,54 @@ const UI = {
             const section = document.querySelector('.archive-section');
             section?.classList.toggle('collapsed');
         });
+
+        // キーボードショートカット
+        document.addEventListener('keydown', (e) => {
+            // 入力フィールドでは無効
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+                return;
+            }
+            // モーダルが開いている場合も無効
+            if (document.querySelector('.modal.active')) {
+                return;
+            }
+
+            switch (e.key.toLowerCase()) {
+                case 't': // 今日に移動
+                    e.preventDefault();
+                    this.goToToday();
+                    break;
+                case 'm': // 月間ビュー
+                    e.preventDefault();
+                    this.switchView('calendar');
+                    break;
+                case 'w': // 週間ビュー
+                    e.preventDefault();
+                    this.switchView('weekly');
+                    break;
+                case 'd': // 日間ビュー
+                    e.preventDefault();
+                    this.switchView('daily');
+                    break;
+                case 'g': // ガントビュー
+                    e.preventDefault();
+                    this.switchView('gantt');
+                    break;
+            }
+        });
+    },
+
+    // 今日に移動
+    goToToday() {
+        const activeView = this.getActiveView();
+
+        if (activeView === 'gantt' && typeof Gantt !== 'undefined') {
+            Gantt.goToToday();
+        } else if (activeView === 'calendar' && typeof Calendar !== 'undefined') {
+            Calendar.goToToday();
+        } else if ((activeView === 'weekly' || activeView === 'daily') && typeof WeeklyView !== 'undefined') {
+            WeeklyView.goToToday();
+        }
     },
 
     // Date navigation common handler

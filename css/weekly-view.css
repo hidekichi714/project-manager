@@ -86,7 +86,7 @@
 }
 
 .weekly-time-column {
-    width: 60px;
+    width: 72px;
     flex-shrink: 0;
     background: var(--color-bg-tertiary);
 }
@@ -99,6 +99,9 @@
     font-size: 0.75rem;
     color: var(--color-text-muted);
     border-bottom: 1px solid var(--border-color);
+    height: 60px;
+    box-sizing: border-box;
+    background: var(--color-bg-tertiary);
 }
 
 .weekly-day-column {
@@ -123,17 +126,6 @@
 .weekly-hour-slot {
     height: 60px;
     box-sizing: border-box;
-}
-
-.weekly-day-column.today .weekly-hour-slot {
-    background: var(--color-accent-light);
-}
-
-.weekly-day-column.weekend {
-    background: rgba(0, 0, 0, 0.02);
-}
-
-.weekly-hour-slot {
     border-bottom: 1px solid var(--border-color);
 }
 
