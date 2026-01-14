@@ -43,6 +43,7 @@
                 <button class="nav-item" data-view="weekly" id="viewWeekly">📆 週間</button>
                 <button class="nav-item" data-view="daily" id="viewDaily">📅 日間</button>
                 <button class="nav-item" data-view="list" id="viewList">📋 リスト</button>
+                <button class="nav-item" data-view="archive" id="viewArchive">📦 アーカイブ</button>
             </nav>
 
             <div class="header-right">
@@ -91,16 +92,6 @@
                     </form>
                 </div>
 
-                <!-- Archive Section -->
-                <div class="sidebar-section archive-section collapsed">
-                    <div class="section-header" id="archiveToggle">
-                        <h2 class="sidebar-title">📦 アーカイブ</h2>
-                        <span class="toggle-icon">▶</span>
-                    </div>
-                    <div class="archive-list" id="archiveList">
-                        <!-- Completed tasks will be rendered here -->
-                    </div>
-                </div>
 
                 <div class="sidebar-section">
                     <div class="section-header">
@@ -271,6 +262,16 @@
                             <div class="empty-icon">📋</div>
                             <p>プロジェクトがありません</p>
                             <p class="empty-hint">「プロジェクト追加」ボタンから始めましょう</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Archive View -->
+                <div class="view-container hidden" id="archiveView">
+                    <div class="archive-view-container">
+                        <h2 class="archive-view-title">📦 完了タスク アーカイブ</h2>
+                        <div class="archive-view-list" id="archiveViewList">
+                            <!-- Completed tasks will be rendered here -->
                         </div>
                     </div>
                 </div>

@@ -42,6 +42,7 @@ const UI = {
             dailyView: document.getElementById('dailyView'),
             listView: document.getElementById('listView'),
             priorityView: document.getElementById('priorityView'),
+            archiveView: document.getElementById('archiveView'),
             projectList: document.getElementById('projectList'),
 
             // Priority Nav
@@ -331,7 +332,8 @@ const UI = {
             elements.weeklyView,
             elements.dailyView,
             elements.listView,
-            elements.priorityView // Add this
+            elements.priorityView,
+            elements.archiveView
         ].forEach(el => el?.classList.add('hidden'));
 
         // Show selected view
@@ -356,6 +358,9 @@ const UI = {
                 if (subType === 'eisenhower') Priority.renderEisenhower();
                 if (subType === 'frog') Priority.renderEatTheFrog();
             }
+        } else if (viewName === 'archive') {
+            elements.archiveView.classList.remove('hidden');
+            this.renderArchiveView();
         }
 
         // Update Nav Active State
@@ -1087,5 +1092,73 @@ const UI = {
         if (!dateStr) return '';
         const date = new Date(dateStr);
         return `${date.getMonth() + 1}/${date.getDate()}`;
+    },
+
+    // アーカイブビュー（メインコンテンツ）をレンダリング
+    renderArchiveView() {
+        const container = document.getElementById('archiveViewList');
+        if (!container) return;
+
+        let archivedTasks = [];
+
+        // 完了したToDoを取得
+        if (typeof ToDo !== 'undefined') {
+            const todos = ToDo.getAll?.() || JSON.parse(localStorage.getItem('pm_todos') || '[]');
+            archivedTasks = archivedTasks.concat(
+                todos.filter(t => t.completed && t.completedAt)
+                    .map(t => ({
+                        ...t,
+                        type: 'todo',
+                        displayName: t.title,
+                        completedDate: t.completedAt?.split('T')[0] || ''
+                    }))
+            );
+        }
+
+        // 完了日でソート（新しい順）
+        archivedTasks.sort((a, b) => {
+            if (!a.completedDate || !b.completedDate) return 0;
+            return b.completedDate.localeCompare(a.completedDate);
+        });
+
+        if (archivedTasks.length === 0) {
+            container.innerHTML = '<div class="archive-view-empty">完了タスクはありません 🎉</div>';
+            return;
+        }
+
+        // 日付でグループ化
+        const grouped = {};
+        archivedTasks.forEach(task => {
+            const dateKey = task.completedDate || 'unknown';
+            if (!grouped[dateKey]) grouped[dateKey] = [];
+            grouped[dateKey].push(task);
+        });
+
+        let html = '';
+        Object.keys(grouped).sort().reverse().forEach(dateKey => {
+            const dateLabel = dateKey === 'unknown' ? '日付不明' : this.formatDateFull(dateKey);
+            html += `<div class="archive-date-group">
+                <h3 class="archive-date-header">${dateLabel}</h3>
+                <div class="archive-date-items">`;
+            grouped[dateKey].forEach(task => {
+                html += `
+                    <div class="archive-view-item">
+                        <span class="archive-view-title">${this.escapeHtml(task.displayName || task.title || '(無題)')}</span>
+                        ${task.dueDate ? `<span class="archive-view-due">期限: ${this.formatDateShort(task.dueDate)}</span>` : ''}
+                    </div>
+                `;
+            });
+            html += '</div></div>';
+        });
+
+        container.innerHTML = html;
+    },
+
+    // 日付フル表示
+    formatDateFull(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+        return `${date.getMonth() + 1}月${date.getDate()}日 (${dayNames[date.getDay()]})`;
     }
 };
