@@ -526,6 +526,15 @@ const WeeklyView = {
         // Googleカレンダーイベントクリック（編集/削除メニュー表示）
         document.querySelectorAll('.weekly-event.google, .daily-event.google, .allday-event').forEach(el => {
             el.addEventListener('click', (e) => {
+                // リサイズハンドルをクリックした場合はポップアップを表示しない
+                if (e.target.closest('.event-resize-handle')) {
+                    return;
+                }
+                // リサイズ中の場合もポップアップを表示しない
+                if (this.resizeState?.isResizing) {
+                    return;
+                }
+
                 e.stopPropagation();
                 const eventId = el.dataset.eventId;
                 const calendarId = el.dataset.calendarId || 'primary';
