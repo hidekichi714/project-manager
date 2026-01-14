@@ -367,8 +367,17 @@ Google Calendar API のセットアップが必要です：
             } else {
                 const startDT = new Date(event.start.dateTime);
                 const endDT = new Date(event.end.dateTime);
-                document.getElementById('googleEventStartTime').value = startDT.toISOString().slice(0, 16);
-                document.getElementById('googleEventEndTime').value = endDT.toISOString().slice(0, 16);
+                // ローカル時間をdatetime-local形式に変換（YYYY-MM-DDTHH:MM）
+                const formatLocalDateTime = (date) => {
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const hours = String(date.getHours()).padStart(2, '0');
+                    const minutes = String(date.getMinutes()).padStart(2, '0');
+                    return `${year}-${month}-${day}T${hours}:${minutes}`;
+                };
+                document.getElementById('googleEventStartTime').value = formatLocalDateTime(startDT);
+                document.getElementById('googleEventEndTime').value = formatLocalDateTime(endDT);
                 document.getElementById('googleEventDateRow').classList.add('hidden');
                 document.getElementById('googleEventTimeRow').classList.remove('hidden');
             }

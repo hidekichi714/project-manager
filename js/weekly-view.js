@@ -428,7 +428,9 @@ const WeeklyView = {
                  data-duration="${duration}"
                  data-all-day="false"
                  style="top: ${top}px; height: ${height}px; left: calc(4px + ${left}%); width: calc(${width}% - 8px); background: ${event.calendarColor || '#4285f4'}30; border-left-color: ${event.calendarColor || '#4285f4'};">
+                <div class="event-resize-handle event-resize-top"></div>
                 <span class="event-title">${UI.escapeHtml(event.summary || '(タイトルなし)')}</span>
+                <div class="event-resize-handle event-resize-bottom"></div>
             </div>
         `;
     },
