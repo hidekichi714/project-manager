@@ -171,6 +171,64 @@ const GoogleCalendar = {
         Calendar.render();
     },
 
+    // サイレント再認証（トークン期限切れ時）
+    async silentReauth() {
+        return new Promise((resolve, reject) => {
+            if (!this.tokenClient) {
+                reject(new Error('Token client not initialized'));
+                return;
+            }
+
+            // コールバックを一時的に上書き
+            const originalCallback = this.tokenClient.callback;
+            this.tokenClient.callback = (response) => {
+                // コールバックを元に戻す
+                this.tokenClient.callback = originalCallback;
+
+                if (response.error) {
+                    console.error('サイレント再認証失敗:', response.error);
+                    this.clearToken();
+                    this.connected = false;
+                    this.updateUI();
+                    reject(response.error);
+                    return;
+                }
+
+                // 新しいトークンを保存
+                const token = gapi.client.getToken();
+                this.saveToken(token);
+                this.connected = true;
+                console.log('Google Calendar: サイレント再認証成功');
+                resolve();
+            };
+
+            // prompt: '' でサイレント認証を試みる（ユーザー操作なし）
+            this.tokenClient.requestAccessToken({ prompt: '' });
+        });
+    },
+
+    // API呼び出しラッパー（自動再認証付き）
+    async callWithRetry(apiCall) {
+        try {
+            return await apiCall();
+        } catch (error) {
+            // 401 (Unauthorized) または 403 (Forbidden) の場合、再認証を試みる
+            if (error.status === 401 || error.status === 403) {
+                console.log('Google Calendar: トークン期限切れ、再認証中...');
+                try {
+                    await this.silentReauth();
+                    // 再認証成功後、再試行
+                    return await apiCall();
+                } catch (reauthError) {
+                    console.error('再認証失敗:', reauthError);
+                    UI.showToast('Googleカレンダーの再認証が必要です', 'warning');
+                    throw reauthError;
+                }
+            }
+            throw error;
+        }
+    },
+
     // イベント取得
     async fetchEvents() {
         if (!this.connected) return;
@@ -241,7 +299,9 @@ const GoogleCalendar = {
     // カレンダー一覧取得
     async fetchCalendars() {
         try {
-            const response = await gapi.client.calendar.calendarList.list();
+            const response = await this.callWithRetry(() =>
+                gapi.client.calendar.calendarList.list()
+            );
             this.calendars = response.result.items || [];
 
             // 初回は全カレンダーを選択
