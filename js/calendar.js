@@ -57,12 +57,135 @@ const Calendar = {
         const tasks = Storage.getTasks();
         const googleEvents = GoogleCalendar.getEvents() || [];
 
-        let html = this.renderHeader();
-        html += this.renderDays(days, tasks, googleEvents);
+        // 今月のToDo取得
+        const monthTodos = this.getMonthTodos(year, month);
 
-        container.innerHTML = `<div class="calendar-grid">${html}</div>`;
+        let html = '<div class="calendar-wrapper">';
+        html += this.renderMonthTodoPanel(monthTodos, year, month);
+        html += '<div class="calendar-main">';
+        html += '<div class="calendar-grid">';
+        html += this.renderHeader();
+        html += this.renderDays(days, tasks, googleEvents);
+        html += '</div></div></div>';
+
+        container.innerHTML = html;
         this.bindDayEvents();
+        this.bindTodoPanelEvents();
         this.initDragDrop();
+    },
+
+    // 今月のToDoを取得
+    getMonthTodos(year, month) {
+        if (typeof ToDo === 'undefined') return [];
+
+        const todos = ToDo.getAll?.() || JSON.parse(localStorage.getItem('pm_todos') || '[]');
+        const monthStart = new Date(year, month, 1);
+        const monthEnd = new Date(year, month + 1, 0);
+        const today = new Date().toISOString().split('T')[0];
+
+        return todos.filter(t => {
+            if (!t.dueDate) return false;
+            const dueDate = new Date(t.dueDate);
+            // 今月内の期限、または超過未完了
+            const isInMonth = dueDate >= monthStart && dueDate <= monthEnd;
+            const isOverdueUncompleted = !t.completed && t.dueDate < today;
+            const completedThisMonth = t.completed && t.completedAt &&
+                new Date(t.completedAt.split('T')[0]) >= monthStart &&
+                new Date(t.completedAt.split('T')[0]) <= monthEnd;
+            return isInMonth || isOverdueUncompleted || completedThisMonth;
+        }).sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''));
+    },
+
+    // 月間タスクパネル
+    renderMonthTodoPanel(todos, year, month) {
+        const today = new Date().toISOString().split('T')[0];
+        const monthEnd = new Date(year, month + 1, 0);
+        const monthEndStr = `${monthEnd.getMonth() + 1}/${monthEnd.getDate()}`;
+
+        let html = '<div class="month-todo-panel">';
+        html += '<h3 class="month-todo-title">📋 今月のタスク</h3>';
+        html += `<p class="month-todo-subtitle">${monthEndStr}までの期限</p>`;
+        html += '<div class="month-todo-list">';
+
+        if (todos.length === 0) {
+            html += '<div class="month-todo-empty">タスクはありません</div>';
+        } else {
+            todos.forEach(todo => {
+                const isCompleted = todo.completed;
+                const isOverdue = !isCompleted && todo.dueDate && todo.dueDate < today;
+                const dueText = todo.dueDate ? new Date(todo.dueDate).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }) : '期限なし';
+
+                html += `
+                    <div class="month-todo-item ${isCompleted ? 'completed' : ''} ${isOverdue ? 'overdue' : ''} draggable-todo" 
+                         draggable="${!isCompleted}"
+                         data-todo-id="${todo.id}"
+                         data-todo-title="${UI.escapeHtml(todo.title)}"
+                         data-todo-date="${todo.dueDate || ''}">
+                        <input type="checkbox" class="todo-checkbox" ${isCompleted ? 'checked' : ''}>
+                        <span class="todo-priority-dot ${todo.priority}"></span>
+                        <div class="todo-info">
+                            <span class="todo-name ${isCompleted ? 'strikethrough' : ''}">${UI.escapeHtml(todo.title)}</span>
+                            ${!isCompleted ? `<input type="date" class="todo-date-edit" value="${todo.dueDate || ''}" title="期限を変更">` : `<span class="todo-due">${dueText}</span>`}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        html += '</div></div>';
+        return html;
+    },
+
+    // タスクパネルイベント
+    bindTodoPanelEvents() {
+        // チェックボックス
+        document.querySelectorAll('.month-todo-panel .todo-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                e.stopPropagation();
+                const item = e.target.closest('.month-todo-item');
+                const id = item.dataset.todoId;
+                if (typeof ToDo !== 'undefined') {
+                    ToDo.toggleComplete(id);
+                    this.render();
+                    UI.renderDueTasks();
+                }
+            });
+        });
+
+        // 日付変更
+        document.querySelectorAll('.month-todo-panel .todo-date-edit').forEach(input => {
+            input.addEventListener('change', (e) => {
+                e.stopPropagation();
+                const item = e.target.closest('.month-todo-item');
+                const id = item.dataset.todoId;
+                const newDate = e.target.value;
+                if (typeof ToDo !== 'undefined') {
+                    const todo = ToDo.getAll().find(t => t.id === id);
+                    if (todo) {
+                        todo.dueDate = newDate;
+                        ToDo.saveTodo(todo);
+                        this.render();
+                        UI.renderDueTasks();
+                    }
+                }
+            });
+        });
+
+        // ドラッグ開始
+        document.querySelectorAll('.month-todo-panel .draggable-todo').forEach(el => {
+            el.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', JSON.stringify({
+                    type: 'todo',
+                    id: el.dataset.todoId,
+                    title: el.dataset.todoTitle,
+                    date: el.dataset.todoDate
+                }));
+                el.classList.add('dragging');
+            });
+            el.addEventListener('dragend', () => {
+                el.classList.remove('dragging');
+            });
+        });
     },
 
     // ヘッダー（曜日）
