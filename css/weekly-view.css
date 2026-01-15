@@ -584,3 +584,131 @@
     padding: var(--spacing-lg);
     font-size: 0.85rem;
 }
+
+/* Daily View Task Panel */
+.daily-wrapper {
+    display: flex;
+    gap: var(--spacing-lg);
+}
+
+.daily-todo-panel {
+    width: 280px;
+    flex-shrink: 0;
+    background: #FFFFFF;
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-md);
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+}
+
+.daily-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.daily-todo-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 var(--spacing-md) 0;
+    color: var(--color-text-primary);
+}
+
+.daily-todo-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.daily-todo-empty {
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    text-align: center;
+    padding: var(--spacing-lg);
+}
+
+.daily-todo-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-md);
+    cursor: grab;
+    transition: all var(--transition-fast);
+}
+
+.daily-todo-item:hover {
+    background: var(--color-bg-secondary);
+}
+
+.daily-todo-item.completed {
+    opacity: 0.6;
+}
+
+.daily-todo-item.overdue {
+    border-left: 3px solid var(--color-danger);
+}
+
+.daily-todo-item .todo-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.daily-todo-item .todo-priority-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.daily-todo-item .todo-priority-dot.high {
+    background: var(--color-danger);
+}
+
+.daily-todo-item .todo-priority-dot.medium {
+    background: var(--color-warning);
+}
+
+.daily-todo-item .todo-priority-dot.low {
+    background: var(--color-success);
+}
+
+.daily-todo-item .todo-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.daily-todo-item .todo-name {
+    font-size: 0.85rem;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.daily-todo-item .todo-name.strikethrough {
+    text-decoration: line-through;
+    color: var(--color-text-muted);
+}
+
+.daily-todo-item .todo-date-edit {
+    font-size: 0.7rem;
+    padding: 2px 4px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: #FFFFFF;
+}
+
+.daily-todo-item .todo-due {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+}
+
+.daily-todo-item.dragging {
+    opacity: 0.5;
+}

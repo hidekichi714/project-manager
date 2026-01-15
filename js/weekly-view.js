@@ -470,9 +470,128 @@ const WeeklyView = {
             return eventDate.toDateString() === day.toDateString();
         });
 
-        let html = this.renderDailyBody(dayTasks, dayEvents);
+        // 今日のToDoを取得
+        const todayTodos = this.getDayTodos(dayStr);
+
+        let html = '<div class="daily-wrapper">';
+        html += this.renderDayTodoPanel(todayTodos, day);
+        html += '<div class="daily-main">';
+        html += this.renderDailyBody(dayTasks, dayEvents);
+        html += '</div></div>';
+
         container.innerHTML = html;
+        this.bindDayTodoPanelEvents();
         this.bindEventClicks();
+    },
+
+    // 指定日のToDoを取得
+    getDayTodos(dayStr) {
+        if (typeof ToDo === 'undefined') return [];
+
+        const todos = ToDo.getAll?.() || JSON.parse(localStorage.getItem('pm_todos') || '[]');
+        const today = new Date().toISOString().split('T')[0];
+
+        return todos.filter(t => {
+            if (t.completed) {
+                // 完了済み: その日に完了 OR その日が期日
+                const completedAt = t.completedAt ? t.completedAt.split('T')[0] : null;
+                return completedAt === dayStr || t.dueDate === dayStr;
+            } else {
+                // 未完了: 期日がその日以前
+                return t.dueDate && t.dueDate <= dayStr;
+            }
+        }).sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''));
+    },
+
+    // 今日のタスクパネル
+    renderDayTodoPanel(todos, day) {
+        const today = new Date().toISOString().split('T')[0];
+        const dayStr = this.formatDate(day);
+        const dayLabel = day.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short' });
+
+        let html = '<div class="daily-todo-panel">';
+        html += `<h3 class="daily-todo-title">📋 ${dayLabel}のタスク</h3>`;
+        html += '<div class="daily-todo-list">';
+
+        if (todos.length === 0) {
+            html += '<div class="daily-todo-empty">タスクはありません</div>';
+        } else {
+            todos.forEach(todo => {
+                const isCompleted = todo.completed;
+                const isOverdue = !isCompleted && todo.dueDate && todo.dueDate < today;
+                const dueText = todo.dueDate ? ToDo.formatDueDate(todo.dueDate) : '期限なし';
+
+                html += `
+                    <div class="daily-todo-item ${isCompleted ? 'completed' : ''} ${isOverdue ? 'overdue' : ''} draggable-todo" 
+                         draggable="${!isCompleted}"
+                         data-todo-id="${todo.id}"
+                         data-todo-title="${UI.escapeHtml(todo.title)}"
+                         data-todo-date="${todo.dueDate || ''}">
+                        <input type="checkbox" class="todo-checkbox" ${isCompleted ? 'checked' : ''}>
+                        <span class="todo-priority-dot ${todo.priority}"></span>
+                        <div class="todo-info">
+                            <span class="todo-name ${isCompleted ? 'strikethrough' : ''}">${UI.escapeHtml(todo.title)}</span>
+                            ${!isCompleted ? `<input type="date" class="todo-date-edit" value="${todo.dueDate || ''}" title="期限を変更">` : `<span class="todo-due">${dueText}</span>`}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        html += '</div></div>';
+        return html;
+    },
+
+    // 日間パネルイベント
+    bindDayTodoPanelEvents() {
+        // チェックボックス
+        document.querySelectorAll('.daily-todo-panel .todo-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                e.stopPropagation();
+                const item = e.target.closest('.daily-todo-item');
+                const id = item.dataset.todoId;
+                if (typeof ToDo !== 'undefined') {
+                    ToDo.toggleComplete(id);
+                    this.renderDaily();
+                    UI.renderDueTasks();
+                }
+            });
+        });
+
+        // 日付変更
+        document.querySelectorAll('.daily-todo-panel .todo-date-edit').forEach(input => {
+            input.addEventListener('change', (e) => {
+                e.stopPropagation();
+                const item = e.target.closest('.daily-todo-item');
+                const id = item.dataset.todoId;
+                const newDate = e.target.value;
+                if (typeof ToDo !== 'undefined') {
+                    const todo = ToDo.getAll().find(t => t.id === id);
+                    if (todo) {
+                        todo.dueDate = newDate;
+                        ToDo.saveTodo(todo);
+                        this.renderDaily();
+                        UI.renderDueTasks();
+                    }
+                }
+            });
+        });
+
+        // ドラッグ
+        document.querySelectorAll('.daily-todo-panel .draggable-todo').forEach(el => {
+            el.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', JSON.stringify({
+                    type: 'todo',
+                    id: el.dataset.todoId,
+                    title: el.dataset.todoTitle,
+                    date: el.dataset.todoDate
+                }));
+                el.classList.add('dragging');
+            });
+            el.addEventListener('dragend', () => {
+                el.classList.remove('dragging');
+            });
+        });
     },
 
     renderDailyBody(tasks, googleEvents) {
