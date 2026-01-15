@@ -33,10 +33,44 @@ const GoogleCalendar = {
             this.initializeGis();
             this.initialized = true;
             console.log('Google Calendar: 初期化完了');
+
+            // 保存されたトークンを復元
+            this.restoreToken();
+
             this.updateUI();
         } catch (error) {
             console.error('Google Calendar 初期化エラー:', error);
         }
+    },
+
+    // トークンをlocalStorageに保存
+    saveToken(token) {
+        if (token) {
+            localStorage.setItem('pm_google_token', JSON.stringify(token));
+        }
+    },
+
+    // トークンを復元
+    restoreToken() {
+        try {
+            const savedToken = localStorage.getItem('pm_google_token');
+            if (savedToken) {
+                const token = JSON.parse(savedToken);
+                gapi.client.setToken(token);
+                this.connected = true;
+                this.updateUI();
+                this.fetchEvents();
+                console.log('Google Calendar: トークンを復元しました');
+            }
+        } catch (error) {
+            console.log('Google Calendar: 保存されたトークンがありません');
+            localStorage.removeItem('pm_google_token');
+        }
+    },
+
+    // トークンを削除
+    clearToken() {
+        localStorage.removeItem('pm_google_token');
     },
 
     // GAPI スクリプト読み込み
@@ -96,6 +130,10 @@ const GoogleCalendar = {
                     console.error('Google Calendar 認証エラー:', response);
                     return;
                 }
+                // トークンを保存
+                const token = gapi.client.getToken();
+                this.saveToken(token);
+
                 this.connected = true;
                 this.updateUI();
                 this.fetchEvents();
@@ -124,6 +162,9 @@ const GoogleCalendar = {
             google.accounts.oauth2.revoke(token.access_token);
             gapi.client.setToken('');
         }
+        // 保存されたトークンも削除
+        this.clearToken();
+
         this.connected = false;
         this.events = [];
         this.updateUI();
