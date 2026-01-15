@@ -1014,15 +1014,23 @@ const UI = {
         if (typeof ToDo !== 'undefined') {
             const todos = ToDo.getAll?.() || JSON.parse(localStorage.getItem('pm_todos') || '[]');
             todos.forEach(t => {
+                const dueDate = t.dueDate;
+                const completedAt = t.completedAt ? t.completedAt.split('T')[0] : null;
+
                 if (t.completed) {
-                    // 完了済みタスク: 期日前完了は表示（横線）、期日後完了は非表示
-                    const completedOnTime = t.dueDate && t.completedAt && t.completedAt.split('T')[0] <= t.dueDate;
-                    if (completedOnTime) {
+                    // 完了済み: 今日完了したタスク OR 今日が期日のタスク のみ表示
+                    const completedToday = completedAt === today;
+                    const dueDateIsToday = dueDate === today;
+
+                    if (completedToday || dueDateIsToday) {
                         dueTasks.push({ ...t, type: 'todo', displayName: t.title, completedOnTime: true });
                     }
-                } else if (t.dueDate && t.dueDate <= today) {
-                    // 未完了で期限内/過ぎたタスク
-                    dueTasks.push({ ...t, type: 'todo', displayName: t.title });
+                    // 前日以前に完了したタスク（今日期限でない）は非表示
+                } else {
+                    // 未完了: 期日が今日以前のタスクを表示
+                    if (dueDate && dueDate <= today) {
+                        dueTasks.push({ ...t, type: 'todo', displayName: t.title });
+                    }
                 }
             });
         }
