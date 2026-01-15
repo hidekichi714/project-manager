@@ -23,6 +23,25 @@ const Gantt = {
     // 初期化
     init() {
         this.calculatePeriod();
+        this.bindScaleEvents();
+    },
+
+    // スケール変更イベントをバインド
+    bindScaleEvents() {
+        const scaleSelector = document.getElementById('ganttScale');
+        if (scaleSelector) {
+            scaleSelector.addEventListener('change', (e) => {
+                this.setScale(e.target.value);
+            });
+        }
+
+        // ガント専用ナビゲーションボタン
+        document.getElementById('ganttPrev')?.addEventListener('click', () => {
+            this.navigate(-1);
+        });
+        document.getElementById('ganttNext')?.addEventListener('click', () => {
+            this.navigate(1);
+        });
     },
 
     // 期間計算
