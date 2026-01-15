@@ -9,7 +9,7 @@ const Calendar = {
 
     // 日本語設定
     monthNames: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
-    dayNames: ['日', '月', '火', '水', '木', '金', '土'],
+    dayNames: ['月', '火', '水', '木', '金', '土', '日'],
 
     // 初期化
     init() {
@@ -68,8 +68,11 @@ const Calendar = {
     // ヘッダー（曜日）
     renderHeader() {
         return this.dayNames.map((day, index) => {
-            const isWeekend = index === 0 || index === 6;
-            const dayClass = index === 6 ? 'saturday' : (index === 0 ? 'sunday' : '');
+            // index: 0=月, 1=火, 2=水, 3=木, 4=金, 5=土, 6=日
+            const isSaturday = index === 5;
+            const isSunday = index === 6;
+            const isWeekend = isSaturday || isSunday;
+            const dayClass = isSaturday ? 'saturday' : (isSunday ? 'sunday' : '');
             return `<div class="calendar-header-cell ${isWeekend ? 'weekend' : ''} ${dayClass}">${day}</div>`;
         }).join('');
     },
@@ -80,8 +83,11 @@ const Calendar = {
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
 
-        // 前月の日を追加
-        const firstDayOfWeek = firstDay.getDay();
+        // 前月の日を追加（月曜始まり）
+        // getDay(): 0=日, 1=月, 2=火, ..., 6=土
+        // 月曜始まりにするため、getDay()を変換: 月=0, 火=1, ..., 日=6
+        let firstDayOfWeek = firstDay.getDay();
+        firstDayOfWeek = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1; // 日曜(0)→6, 月曜(1)→0, ...
         for (let i = firstDayOfWeek - 1; i >= 0; i--) {
             const date = new Date(year, month, -i);
             days.push({ date, isCurrentMonth: false });
@@ -111,7 +117,6 @@ const Calendar = {
         return days.map(({ date, isCurrentMonth }) => {
             const dateStr = this.formatDate(date);
             const isToday = date.getTime() === today.getTime();
-            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
 
             // この日のタスクを取得
             const dayTasks = tasks.filter(task => {
@@ -132,16 +137,20 @@ const Calendar = {
             const allEvents = [...dayTasks.map(t => ({ ...t, type: 'task' })),
             ...dayGoogleEvents.map(e => ({ ...e, type: 'google' }))];
             const hasEvents = dayTasks.length > 0;
-            const hasGoogleEvents = dayGoogleEvents.length > 0;
+            // 曜日判定（月曜始まり: getDay() 0=日, 6=土）
+            const dayOfWeek = date.getDay();
+            const isSaturday = dayOfWeek === 6;
+            const isSunday = dayOfWeek === 0;
+            const isWeekend = isSaturday || isSunday;
 
             let classes = 'calendar-day';
             if (!isCurrentMonth) classes += ' other-month';
             if (isToday) classes += ' today';
             if (isWeekend) classes += ' weekend';
-            if (date.getDay() === 6) classes += ' saturday';
-            if (date.getDay() === 0) classes += ' sunday';
+            if (isSaturday) classes += ' saturday';
+            if (isSunday) classes += ' sunday';
             if (hasEvents) classes += ' has-events';
-            if (hasGoogleEvents) classes += ' has-google-events';
+            if (dayGoogleEvents.length > 0) classes += ' has-google-events';
 
             return `
                 <div class="${classes}" data-date="${dateStr}">
