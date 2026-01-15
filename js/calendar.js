@@ -334,6 +334,18 @@ const Calendar = {
             });
         });
 
+        // Googleカレンダーイベントクリック（編集モーダルを開く）
+        document.querySelectorAll('.calendar-event.type-google').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const eventId = el.dataset.eventId;
+                const calendarId = el.dataset.calendarId || 'primary';
+                if (typeof GoogleCalendar !== 'undefined' && eventId) {
+                    GoogleCalendar.openEditEventModal(eventId, calendarId);
+                }
+            });
+        });
+
         // 日付セルクリック（将来的にクイック追加機能用）
         document.querySelectorAll('.calendar-day').forEach(el => {
             el.addEventListener('dblclick', () => {

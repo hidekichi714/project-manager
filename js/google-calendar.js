@@ -356,9 +356,10 @@ Google Calendar API のセットアップが必要です：
             // 編集モード用にフォームを設定
             document.getElementById('googleEventTitle').value = event.summary || '';
 
-            // カレンダーセレクターに現在のカレンダーを設定
+            // カレンダーセレクターを更新してから現在のカレンダーを設定
             const calendarSelect = document.getElementById('googleEventCalendar');
             if (calendarSelect) {
+                this.populateCalendarSelect(calendarSelect);
                 calendarSelect.value = calendarId;
             }
 
