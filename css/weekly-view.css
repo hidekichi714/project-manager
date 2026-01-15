@@ -129,6 +129,19 @@
     border-bottom: 1px solid var(--border-color);
 }
 
+/* Today, Saturday, Sunday backgrounds extend to all hour slots */
+.weekly-day-column.today .weekly-hour-slot {
+    background: var(--color-accent-light);
+}
+
+.weekly-day-column.saturday .weekly-hour-slot {
+    background: rgba(59, 130, 246, 0.04);
+}
+
+.weekly-day-column.sunday .weekly-hour-slot {
+    background: rgba(239, 68, 68, 0.04);
+}
+
 /* All-Day Row (between header and body) */
 .weekly-allday-row {
     display: flex;

@@ -308,6 +308,20 @@ const UI = {
                     e.preventDefault();
                     this.switchView('gantt');
                     break;
+                case 'n': // 新規タスク追加
+                    e.preventDefault();
+                    this.openTodoModal();
+                    break;
+                case 'p': // 新規プロジェクト追加
+                    e.preventDefault();
+                    this.openProjectModal();
+                    break;
+                case 'c': // 新規予定追加（Googleカレンダー）
+                    e.preventDefault();
+                    if (typeof GoogleCalendar !== 'undefined') {
+                        GoogleCalendar.openEventModal();
+                    }
+                    break;
             }
         });
     },
